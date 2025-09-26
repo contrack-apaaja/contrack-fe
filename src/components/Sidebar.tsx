@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,13 +16,16 @@ const navigation = [
   { name: "Clause", href: "/clauses", icon: Clipboard },
 ]
 
-const useAuth = () => ({
-  user: {
-    name: "John Doe",
-    email: "john.doe@example.com",
-  },
-  logout: () => authUtils.logout(),
-})
+const useAuth = () => {
+  const userData = authUtils.getUserData();
+  return {
+    user: userData ? {
+      email: userData.email,
+      role: userData.role
+    } : null,
+    logout: () => authUtils.logout()
+  };
+}
 
 
 export function Sidebar() {
@@ -35,10 +39,16 @@ export function Sidebar() {
   }
 
   return (
-    <div className="fixed top-0 left-0 flex w-64 h-full flex-col bg-sidebar border-r border-sidebar-border z-40">
-        <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
-          <h1 className="text-xl font-bold text-[#137fec]">contrack.</h1>
-        </div>
+    <div className="fixed top-0 left-0 flex w-64 h-full flex-col bg-sidebar border-r border-sidebar-border">
+      <div className="flex h-16 items-center px-6 border-b border-sidebar-border gap-2">
+        <Image
+          src="/logo/blue.png"
+          alt="Contrack Logo"
+          width={16}
+          height={16}
+        />
+        <h1 className="text-xl font-bold text-[#137fec]">contrack.</h1>
+      </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
@@ -68,8 +78,8 @@ export function Sidebar() {
             <User className="h-4 w-4 text-sidebar-primary-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name}</p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email}</p>
+            <p className="text-xs text-sidebar-foreground/60 truncate">{user?.role}</p>
           </div>
         </div>
         <Button

@@ -293,17 +293,17 @@ const CreateContractPage = () => {
       const mockPreviews: ContractPreview[] = [
         {
           id: 1,
-          name: 'Template 1 - Universal ILCS',
+          name: 'Template 1',
           content: generateHTMLContent(1)
         },
         {
           id: 2,
-          name: 'Template 2 - Construction Contract',
+          name: 'Template 2',
           content: generateHTMLContent(2)
         },
         {
           id: 3,
-          name: 'Template 3 - Service Agreement',
+          name: 'Template 3',
           content: generateHTMLContent(3)
         }
       ];
@@ -327,12 +327,9 @@ const CreateContractPage = () => {
     const generateStakeholdersSection = () => {
       let stakeholdersContent = '';
       
-      // Find Institution stakeholder or use first one as PIHAK PERTAMA
-      const institutionStakeholder = stakeholders.find(s => 
-        s.role_in_contract.toLowerCase().includes('institution')
-      );
-      const firstStakeholder = institutionStakeholder || stakeholders[0];
-      const otherStakeholders = stakeholders.filter(s => s !== firstStakeholder);
+      // Use first stakeholder as PIHAK PERTAMA
+      const firstStakeholder = stakeholders[0] || null;
+      const otherStakeholders = stakeholders.slice(1);
 
       // PIHAK PERTAMA
       stakeholdersContent += `\\subsection{PIHAK PERTAMA}\n`;
@@ -403,8 +400,9 @@ const CreateContractPage = () => {
 
     // Template 2: Construction Contract Template
     const generateTemplate2 = () => {
-      const institutionStakeholder = stakeholders.find(s => s.role_in_contract.toLowerCase().includes('institution'));
-      const contractorStakeholder = stakeholders.find(s => !s.role_in_contract.toLowerCase().includes('institution'));
+      // Use first stakeholder as primary, second as secondary
+      const institutionStakeholder = stakeholders[0] || null;
+      const contractorStakeholder = stakeholders[1] || null;
       
       return '\\documentclass[a4paper,12pt]{article}' +
         '\\usepackage[utf8]{inputenc}' +
@@ -598,8 +596,9 @@ const CreateContractPage = () => {
 
     // Template 3: Service Agreement Template
     const generateTemplate3 = () => {
-      const institutionStakeholder = stakeholders.find(s => s.role_in_contract.toLowerCase().includes('institution'));
-      const contractorStakeholder = stakeholders.find(s => !s.role_in_contract.toLowerCase().includes('institution'));
+      // Use first stakeholder as primary, second as secondary
+      const institutionStakeholder = stakeholders[0] || null;
+      const contractorStakeholder = stakeholders[1] || null;
       
       const fundingSubsection = funding_source ? '\\subsection{Sumber Pembiayaan}\nPerjanjian ini dibiayai dari \\textbf{' + funding_source + '}.\n' : '';
       
@@ -764,8 +763,9 @@ const CreateContractPage = () => {
 
   // HTML Template 1: Universal ILCS Template
   const generateHTMLTemplate1 = (formData: any, stakeholders: any[]) => {
-    const institutionStakeholder = stakeholders.find(s => s.role_in_contract.toLowerCase().includes('institution'));
-    const contractorStakeholder = stakeholders.find(s => !s.role_in_contract.toLowerCase().includes('institution'));
+    // Use first stakeholder as primary, second as secondary
+    const institutionStakeholder = stakeholders[0] || null;
+    const contractorStakeholder = stakeholders[1] || null;
     
     const { project_name, contract_type, signing_place, signing_date, total_value, funding_source } = formData;
     
@@ -788,7 +788,6 @@ const CreateContractPage = () => {
         .header h1 { font-size: 18pt; font-weight: bold; margin-bottom: 0.5cm; }
         .header h2 { font-size: 14pt; font-weight: bold; margin-bottom: 0.5cm; }
         .contract-number { font-size: 12pt; font-weight: bold; color: #666; }
-        .dynamic-field { background-color: #fff3cd; padding: 2px 4px; border-radius: 3px; font-weight: bold; color: #856404; }
         .section { margin: 1cm 0; }
         .section-title { font-size: 14pt; font-weight: bold; margin-bottom: 0.5cm; text-decoration: underline; }
         .subsection-title { font-size: 12pt; font-weight: bold; margin: 0.5cm 0 0.3cm 0; }
@@ -800,9 +799,6 @@ const CreateContractPage = () => {
         .party-designation { font-weight: bold; margin: 0.3cm 0; }
         .background-list { margin: 0.5cm 0; padding-left: 1cm; }
         .background-list li { margin-bottom: 0.3cm; }
-        .clause-section { background-color: #f8f9fa; padding: 1cm; margin: 1cm 0; border-left: 4px solid #007bff; }
-        .clause-content { margin: 0.5cm 0; }
-        .clause-content p { margin-bottom: 0.5cm; }
         .signature-section { margin: 2cm 0; page-break-inside: avoid; }
         .signature-table { width: 100%; border-collapse: collapse; }
         .signature-table td { text-align: center; vertical-align: top; padding: 1cm; }
@@ -814,14 +810,14 @@ const CreateContractPage = () => {
     <div class="header">
         <h1>PERJANJIAN JASA</h1>
         <h2>PT INDONESIA LOGISTIC CARGO SERVICES (ILCS) PELINDO</h2>
-        <div class="contract-number">Nomor: <span class="dynamic-field">${contractNumber}</span></div>
+        <div class="contract-number">Nomor: <span>${contractNumber}</span></div>
     </div>
 
     <div class="section">
-        <p>Pada hari ini, <strong><span class="dynamic-field">${indonesianDate}</span></strong>, 
-        bertempat di <strong><span class="dynamic-field">${signing_place || 'Tidak ditentukan'}</span></strong>, 
+        <p>Pada hari ini, <strong><span>${indonesianDate}</span></strong>, 
+        bertempat di <strong><span>${signing_place || 'PT ILCS Pelindo'}</span></strong>, 
         telah dibuat dan ditandatangani Perjanjian Jasa untuk 
-        <strong><span class="dynamic-field">${project_name || 'Tidak ditentukan'}</span></strong> dengan ketentuan sebagai berikut:</p>
+        <strong><span>${project_name || 'PT ILCS Pelindo'}</span></strong> dengan ketentuan sebagai berikut:</p>
     </div>
 
     <div class="section">
@@ -833,8 +829,8 @@ const CreateContractPage = () => {
             <table class="info-table">
                 <tr><td>Nama</td><td>:</td><td>PT Indonesia Logistic Cargo Services (ILCS) Pelindo</td></tr>
                 <tr><td>Alamat</td><td>:</td><td>Jl. Raya Pelabuhan No. 1, Jakarta Utara</td></tr>
-                <tr><td>Dalam hal ini diwakili oleh</td><td>:</td><td><strong><span class="dynamic-field">${institutionStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong></td></tr>
-                <tr><td>Jabatan</td><td>:</td><td><strong><span class="dynamic-field">${institutionStakeholder?.representative_title || 'Tidak ditentukan'}</span></strong></td></tr>
+                <tr><td>Dalam hal ini diwakili oleh</td><td>:</td><td><strong><span>${institutionStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong></td></tr>
+                <tr><td>Jabatan</td><td>:</td><td><strong><span>${institutionStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></strong></td></tr>
             </table>
             <div class="party-designation">Selanjutnya disebut sebagai <strong>"PIHAK PERTAMA"</strong></div>
         </div>
@@ -842,10 +838,10 @@ const CreateContractPage = () => {
         <div class="party-info">
             <div class="subsection-title">1.2 PIHAK KEDUA</div>
             <table class="info-table">
-                <tr><td>Nama</td><td>:</td><td><strong><span class="dynamic-field">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong></td></tr>
-                <tr><td>Alamat</td><td>:</td><td><strong><span class="dynamic-field">[Alamat Perusahaan]</span></strong></td></tr>
-                <tr><td>Dalam hal ini diwakili oleh</td><td>:</td><td><strong><span class="dynamic-field">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong></td></tr>
-                <tr><td>Jabatan</td><td>:</td><td><strong><span class="dynamic-field">${contractorStakeholder?.representative_title || 'Tidak ditentukan'}</span></strong></td></tr>
+                <tr><td>Nama</td><td>:</td><td><strong><span>${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong></td></tr>
+                <tr><td>Alamat</td><td>:</td><td><strong><span>[Alamat Perusahaan]</span></strong></td></tr>
+                <tr><td>Dalam hal ini diwakili oleh</td><td>:</td><td><strong><span>${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong></td></tr>
+                <tr><td>Jabatan</td><td>:</td><td><strong><span>${contractorStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></strong></td></tr>
             </table>
             <div class="party-designation">Selanjutnya disebut sebagai <strong>"PIHAK KEDUA"</strong></div>
         </div>
@@ -855,7 +851,7 @@ const CreateContractPage = () => {
         <div class="section-title">2. LATAR BELAKANG</div>
         <p>Para pihak sepakat untuk mengadakan perjanjian jasa dengan latar belakang:</p>
         <ol class="background-list" type="a">
-            <li>Bahwa PIHAK PERTAMA memerlukan jasa untuk pelaksanaan <strong><span class="dynamic-field">${project_name || 'Tidak ditentukan'}</span></strong>;</li>
+            <li>Bahwa PIHAK PERTAMA memerlukan jasa untuk pelaksanaan <strong><span>${project_name || 'PT ILCS Pelindo'}</span></strong>;</li>
             <li>Bahwa PIHAK KEDUA memiliki kemampuan dan keahlian untuk melaksanakan pekerjaan tersebut;</li>
             <li>Bahwa berdasarkan hal tersebut, para pihak sepakat untuk mengikat diri dalam perjanjian ini.</li>
         </ol>
@@ -863,12 +859,12 @@ const CreateContractPage = () => {
 
     <div class="section">
         <div class="section-title">3. KETENTUAN PERJANJIAN</div>
-        <div class="clause-section">
+        <div>
             <div class="subsection-title">3.1 HARGA KONTRAK, SUMBER PEMBIAYAAN DAN PEMBAYARAN</div>
-            <div class="clause-content">
-                <p><strong>(1)</strong> Harga Kontrak termasuk Pajak Pertambahan Nilai (PPN) yang diperoleh berdasarkan total harga penawaran terkoreksi sebagaimana tercantum dalam Daftar Kuantitas dan Harga (BoQ) adalah sebesar <strong><span class="dynamic-field">${indonesianCurrency}</span></strong> (<strong><span class="dynamic-field">${indonesianWords}</span></strong>) termasuk PPN 11%, PPh 1,5% dan bunga diskonto SCF.</p>
+            <div>
+                <p><strong>(1)</strong> Harga Kontrak termasuk Pajak Pertambahan Nilai (PPN) yang diperoleh berdasarkan total harga penawaran terkoreksi sebagaimana tercantum dalam Daftar Kuantitas dan Harga (BoQ) adalah sebesar <strong><span>${indonesianCurrency}</span></strong> (<strong><span>${indonesianWords}</span></strong>) termasuk PPN 11%, PPh 1,5% dan bunga diskonto SCF.</p>
                 <p><strong>(2)</strong> Harga pekerjaan dalam perjanjian ini merupakan Harga Satuan Tetap (Unit Price), dimana harga satuan yang tersebut pada daftar kuantitas pekerjaan merupakan kuantitas perkiraan.</p>
-                <p><strong>(3)</strong> Kontrak ini dibiayai dari <strong><span class="dynamic-field">${funding_source || 'Tidak ditentukan'}</span></strong>.</p>
+                <p><strong>(3)</strong> Kontrak ini dibiayai dari <strong><span>${funding_source || 'PT ILCS Pelindo'}</span></strong>.</p>
             </div>
         </div>
     </div>
@@ -884,10 +880,10 @@ const CreateContractPage = () => {
     <div class="signature-section">
         <table class="signature-table">
             <tr><td><strong>PIHAK PERTAMA</strong></td><td><strong>PIHAK KEDUA</strong></td></tr>
-            <tr><td><strong>PT ILCS PELINDO</strong></td><td><strong><span class="dynamic-field">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong></td></tr>
+            <tr><td><strong>PT ILCS PELINDO</strong></td><td><strong><span>${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong></td></tr>
             <tr>
-                <td><div class="signature-line"></div><strong><span class="dynamic-field">${institutionStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong><br><strong><span class="dynamic-field">${institutionStakeholder?.representative_title || 'Tidak ditentukan'}</span></strong></td>
-                <td><div class="signature-line"></div><strong><span class="dynamic-field">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong><br><strong><span class="dynamic-field">${contractorStakeholder?.representative_title || 'Tidak ditentukan'}</span></strong></td>
+                <td><div class="signature-line"></div><strong><span>${institutionStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong><br><strong><span>${institutionStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></strong></td>
+                <td><div class="signature-line"></div><strong><span>${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong><br><strong><span>${contractorStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></strong></td>
             </tr>
         </table>
     </div>
@@ -902,8 +898,9 @@ const CreateContractPage = () => {
 
   // HTML Template 2: Construction Contract Template
   const generateHTMLTemplate2 = (formData: any, stakeholders: any[]) => {
-    const institutionStakeholder = stakeholders.find(s => s.role_in_contract.toLowerCase().includes('institution'));
-    const contractorStakeholder = stakeholders.find(s => !s.role_in_contract.toLowerCase().includes('institution'));
+    // Use first stakeholder as primary, second as secondary
+    const institutionStakeholder = stakeholders[0] || null;
+    const contractorStakeholder = stakeholders[1] || null;
     
     const { project_name, contract_type, signing_place, signing_date, total_value, funding_source } = formData;
     
@@ -926,7 +923,6 @@ const CreateContractPage = () => {
         .header h1 { font-size: 18pt; font-weight: bold; margin-bottom: 0.5cm; }
         .header h2 { font-size: 14pt; font-weight: bold; margin-bottom: 0.5cm; }
         .contract-number { font-size: 12pt; font-weight: bold; color: #666; }
-        .dynamic-field { background-color: #fff3cd; padding: 2px 4px; border-radius: 3px; font-weight: bold; color: #856404; }
         .section { margin: 1cm 0; }
         .section-title { font-size: 14pt; font-weight: bold; margin-bottom: 0.5cm; text-decoration: underline; }
         .subsection-title { font-size: 12pt; font-weight: bold; margin: 0.5cm 0 0.3cm 0; }
@@ -936,9 +932,6 @@ const CreateContractPage = () => {
         .info-table td:first-child { width: 200px; }
         .info-table td:nth-child(2) { width: 20px; text-align: center; }
         .party-designation { font-weight: bold; margin: 0.3cm 0; }
-        .clause-section { background-color: #f8f9fa; padding: 1cm; margin: 1cm 0; border-left: 4px solid #007bff; }
-        .clause-content { margin: 0.5cm 0; }
-        .clause-content p { margin-bottom: 0.5cm; }
         .signature-section { margin: 2cm 0; page-break-inside: avoid; }
         .signature-table { width: 100%; border-collapse: collapse; }
         .signature-table td { text-align: center; vertical-align: top; padding: 1cm; }
@@ -950,11 +943,11 @@ const CreateContractPage = () => {
     <div class="header">
         <h1>KONTRAK KERJA KONSTRUKSI</h1>
         <h2>PT INDONESIA LOGISTIC CARGO SERVICES (ILCS) PELINDO</h2>
-        <div class="contract-number">Nomor: <span class="dynamic-field">${contractNumber}</span></div>
+        <div class="contract-number">Nomor: <span>${contractNumber}</span></div>
     </div>
 
     <div class="section">
-        <p><strong>KONTRAK KERJA KONSTRUKSI</strong> ini dibuat dan ditandatangani di <strong><span class="dynamic-field">${signing_place || 'Tidak ditentukan'}</span></strong> pada hari ini, tanggal <strong><span class="dynamic-field">${indonesianDate}</span></strong>, antara:</p>
+        <p><strong>KONTRAK KERJA KONSTRUKSI</strong> ini dibuat dan ditandatangani di <strong><span>${signing_place || 'PT ILCS Pelindo'}</span></strong> pada hari ini, tanggal <strong><span>${indonesianDate}</span></strong>, antara:</p>
     </div>
 
     <div class="section">
@@ -966,8 +959,8 @@ const CreateContractPage = () => {
             <table class="info-table">
                 <tr><td>Nama</td><td>:</td><td>PT ILCS PELINDO</td></tr>
                 <tr><td>Alamat</td><td>:</td><td>Jl. Raya Pelabuhan No. 1, Jakarta Utara</td></tr>
-                <tr><td>Diwakili oleh</td><td>:</td><td><strong><span class="dynamic-field">${institutionStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong></td></tr>
-                <tr><td>Jabatan</td><td>:</td><td><strong><span class="dynamic-field">${institutionStakeholder?.representative_title || 'Tidak ditentukan'}</span></strong></td></tr>
+                <tr><td>Diwakili oleh</td><td>:</td><td><strong><span>${institutionStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong></td></tr>
+                <tr><td>Jabatan</td><td>:</td><td><strong><span>${institutionStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></strong></td></tr>
             </table>
             <div class="party-designation">Selanjutnya disebut sebagai <strong>"PENGGUNA JASA"</strong></div>
         </div>
@@ -975,11 +968,11 @@ const CreateContractPage = () => {
         <div class="party-info">
             <div class="subsection-title">1.2 PIHAK KEDUA</div>
             <table class="info-table">
-                <tr><td>Nama</td><td>:</td><td><strong><span class="dynamic-field">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong></td></tr>
-                <tr><td>Alamat</td><td>:</td><td><strong><span class="dynamic-field">[Alamat Perusahaan]</span></strong></td></tr>
-                <tr><td>Diwakili oleh</td><td>:</td><td><strong><span class="dynamic-field">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong></td></tr>
-                <tr><td>Jabatan</td><td>:</td><td><strong><span class="dynamic-field">${contractorStakeholder?.representative_title || 'Tidak ditentukan'}</span></strong></td></tr>
-                <tr><td>Nomor Izin</td><td>:</td><td><strong><span class="dynamic-field">CONST-2024-001</span></strong></td></tr>
+                <tr><td>Nama</td><td>:</td><td><strong><span>${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong></td></tr>
+                <tr><td>Alamat</td><td>:</td><td><strong><span>[Alamat Perusahaan]</span></strong></td></tr>
+                <tr><td>Diwakili oleh</td><td>:</td><td><strong><span>${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong></td></tr>
+                <tr><td>Jabatan</td><td>:</td><td><strong><span>${contractorStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></strong></td></tr>
+                <tr><td>Nomor Izin</td><td>:</td><td><strong><span>CONST-2024-001</span></strong></td></tr>
             </table>
             <div class="party-designation">Selanjutnya disebut sebagai <strong>"PENYEDIA JASA"</strong></div>
         </div>
@@ -988,13 +981,13 @@ const CreateContractPage = () => {
     <div class="section">
         <div class="section-title">2. INFORMASI KONTRAK</div>
         <table class="info-table">
-            <tr><td>Jenis Kontrak</td><td>:</td><td><span class="dynamic-field">${contract_type || 'Tidak ditentukan'}</span></td></tr>
-            <tr><td>Nama Proyek</td><td>:</td><td><span class="dynamic-field">${project_name || 'Tidak ditentukan'}</span></td></tr>
-            <tr><td>Nilai Kontrak</td><td>:</td><td><span class="dynamic-field">${indonesianCurrency}</span></td></tr>
-            <tr><td></td><td></td><td><span class="dynamic-field">(${indonesianWords})</span></td></tr>
-            <tr><td>Sumber Pembiayaan</td><td>:</td><td><span class="dynamic-field">${funding_source || 'Tidak ditentukan'}</span></td></tr>
-            <tr><td>Tempat Penandatanganan</td><td>:</td><td><span class="dynamic-field">${signing_place || 'Tidak ditentukan'}</span></td></tr>
-            <tr><td>Tanggal Penandatanganan</td><td>:</td><td><span class="dynamic-field">${indonesianDate}</span></td></tr>
+            <tr><td>Jenis Kontrak</td><td>:</td><td><span>${contract_type || 'PT ILCS Pelindo'}</span></td></tr>
+            <tr><td>Nama Proyek</td><td>:</td><td><span>${project_name || 'PT ILCS Pelindo'}</span></td></tr>
+            <tr><td>Nilai Kontrak</td><td>:</td><td><span>${indonesianCurrency}</span></td></tr>
+            <tr><td></td><td></td><td><span>(${indonesianWords})</span></td></tr>
+            <tr><td>Sumber Pembiayaan</td><td>:</td><td><span>${funding_source || 'PT ILCS Pelindo'}</span></td></tr>
+            <tr><td>Tempat Penandatanganan</td><td>:</td><td><span>${signing_place || 'PT ILCS Pelindo'}</span></td></tr>
+            <tr><td>Tanggal Penandatanganan</td><td>:</td><td><span>${indonesianDate}</span></td></tr>
         </table>
     </div>
 
@@ -1005,12 +998,12 @@ const CreateContractPage = () => {
 
     <div class="section">
         <div class="section-title">4. KETENTUAN KONTRAK</div>
-        <div class="clause-section">
+        <div>
             <div class="subsection-title">4.1 PASAL 003 - HARGA KONTRAK, SUMBER PEMBIAYAAN DAN PEMBAYARAN</div>
-            <div class="clause-content">
-                <p><strong>(1)</strong> Harga Kontrak termasuk Pajak Pertambahan Nilai (PPN) yang diperoleh berdasarkan total harga penawaran terkoreksi sebagaimana tercantum dalam Daftar Kuantitas dan Harga (BoQ) adalah sebesar <strong><span class="dynamic-field">${indonesianCurrency}</span></strong> (<strong><span class="dynamic-field">${indonesianWords}</span></strong>) termasuk PPN 11%, PPh 1,5% dan bunga diskonto SCF.</p>
+            <div>
+                <p><strong>(1)</strong> Harga Kontrak termasuk Pajak Pertambahan Nilai (PPN) yang diperoleh berdasarkan total harga penawaran terkoreksi sebagaimana tercantum dalam Daftar Kuantitas dan Harga (BoQ) adalah sebesar <strong><span>${indonesianCurrency}</span></strong> (<strong><span>${indonesianWords}</span></strong>) termasuk PPN 11%, PPh 1,5% dan bunga diskonto SCF.</p>
                 <p><strong>(2)</strong> Harga pekerjaan dalam perjanjian ini merupakan Harga Satuan Tetap (Unit Price), dimana harga satuan yang tersebut pada daftar kuantitas pekerjaan merupakan kuantitas perkiraan.</p>
-                <p><strong>(3)</strong> Kontrak ini dibiayai dari <strong><span class="dynamic-field">${funding_source || 'Tidak ditentukan'}</span></strong>.</p>
+                <p><strong>(3)</strong> Kontrak ini dibiayai dari <strong><span>${funding_source || 'PT ILCS Pelindo'}</span></strong>.</p>
                 <p><strong>(4)</strong> Pihak Pertama melakukan pembayaran uang muka maksimum 10% dengan counter jaminan bank garansi kepada Pihak Kedua, sebelum barang diproduksi.</p>
                 <p><strong>(5)</strong> Pihak Kedua dapat menagihkan biaya sebesar 50% dari harga produksi material yang sudah terproduksi, 25% dari progress distribusi, dan 25% setelah stressing kepada Pihak Pertama setelah dilakukan checklist bersama terhadap material yang akan diprogres dengan konsultan/owner dan dituangkan dalam berita acara.</p>
                 <p><strong>(6)</strong> Pembayaran untuk kontrak ini dilakukan ke rekening sebagai berikut:</p>
@@ -1036,10 +1029,10 @@ const CreateContractPage = () => {
     <div class="signature-section">
         <table class="signature-table">
             <tr><td><strong>PIHAK PERTAMA</strong></td><td><strong>PIHAK KEDUA</strong></td></tr>
-            <tr><td><strong>PT ILCS PELINDO</strong></td><td><strong><span class="dynamic-field">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong></td></tr>
+            <tr><td><strong>PT ILCS PELINDO</strong></td><td><strong><span>${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong></td></tr>
             <tr>
-                <td><div class="signature-line"></div><strong><span class="dynamic-field">${institutionStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong><br><strong><span class="dynamic-field">${institutionStakeholder?.representative_title || 'Tidak ditentukan'}</span></strong></td>
-                <td><div class="signature-line"></div><strong><span class="dynamic-field">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong><br><strong><span class="dynamic-field">${contractorStakeholder?.representative_title || 'Tidak ditentukan'}</span></strong></td>
+                <td><div class="signature-line"></div><strong><span>${institutionStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong><br><strong><span>${institutionStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></strong></td>
+                <td><div class="signature-line"></div><strong><span>${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong><br><strong><span>${contractorStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></strong></td>
             </tr>
         </table>
     </div>
@@ -1054,8 +1047,9 @@ const CreateContractPage = () => {
 
   // HTML Template 3: Advanced Construction Contract Template
   const generateHTMLTemplate3 = (formData: any, stakeholders: any[]) => {
-    const institutionStakeholder = stakeholders.find(s => s.role_in_contract.toLowerCase().includes('institution'));
-    const contractorStakeholder = stakeholders.find(s => !s.role_in_contract.toLowerCase().includes('institution'));
+    // Use first stakeholder as primary, second as secondary
+    const institutionStakeholder = stakeholders[0] || null;
+    const contractorStakeholder = stakeholders[1] || null;
     
     const { project_name, contract_type, signing_place, signing_date, total_value, funding_source } = formData;
     
@@ -1073,17 +1067,17 @@ const CreateContractPage = () => {
     <title>Construction Contract - PT ILCS PELINDO</title>
     <style>
         body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; max-width: 21cm; margin: 0 auto; padding: 3cm 2.5cm; background: white; color: black; }
-        .page-header { position: fixed; top: 1cm; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0.5cm 2.5cm; border-bottom: 1px solid #ddd; background: white; z-index: 1000; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; padding: 0.5cm 0; border-bottom: 1px solid #ddd; background: white; margin-bottom: 1cm; }
         .header-logo { font-weight: bold; color: #0066cc; font-size: 14pt; }
         .header-company { font-weight: bold; font-size: 14pt; }
-        .page-footer { position: fixed; bottom: 1cm; left: 0; right: 0; text-align: center; border-top: 1px solid #ddd; padding-top: 0.5cm; background: white; z-index: 1000; }
-        .content { margin-top: 4cm; margin-bottom: 3cm; }
+        .page-footer { text-align: center; border-top: 1px solid #ddd; padding-top: 0.5cm; background: white; margin-top: 2cm; }
+        .content { margin-top: 0; margin-bottom: 0; }
         .document-title { text-align: center; margin-bottom: 2cm; }
         .document-title h1 { font-size: 18pt; font-weight: bold; margin: 0 0 0.5cm 0; }
         .document-title .contract-number { font-size: 14pt; font-weight: bold; margin-bottom: 0.5cm; }
         .document-title .project-name { font-size: 14pt; font-weight: bold; margin-bottom: 0.3cm; }
         .document-title .package-name { font-size: 14pt; font-weight: bold; margin-bottom: 1cm; }
-        .dynamic { font-weight: bold; color: #0066cc; background-color: #f0f8ff; padding: 0.1cm 0.2cm; border-radius: 2px; }
+        .dynamic { font-weight: bold; color: black; }
         .party-info { margin: 1cm 0; }
         .info-table { width: 100%; border-collapse: collapse; margin: 0.3cm 0; }
         .info-table td { padding: 0.2cm; vertical-align: top; }
@@ -1092,20 +1086,18 @@ const CreateContractPage = () => {
         .section-header { font-size: 14pt; font-weight: bold; margin: 1.5cm 0 1cm 0; text-align: center; border-bottom: 1px solid #333; padding-bottom: 0.3cm; }
         .subsection-header { font-size: 12pt; font-weight: bold; margin: 1cm 0 0.5cm 0; }
         .contract-clause { margin: 1cm 0; }
-        .clause-content { text-align: justify; margin-bottom: 0.5cm; }
-        .clause-content p { margin: 0.3cm 0; }
         .signature-section { margin-top: 2cm; text-align: center; }
         .signature-table { width: 100%; margin: 1cm auto; }
         .signature-table td { text-align: center; padding: 1cm; vertical-align: top; }
         .signature-line { border-bottom: 0.5pt solid black; width: 5cm; height: 3cm; display: inline-block; margin-bottom: 0.3cm; }
         .footer-note { text-align: center; font-style: italic; margin-top: 2cm; font-size: 11pt; }
         .margin-top-1 { margin-top: 1cm; }
-        @media print { .page-header, .page-footer { position: running(); } .dynamic { color: black; background-color: transparent; } }
+        @media print { .page-header, .page-footer { position: running(); } .dynamic { color: black; } }
     </style>
 </head>
 <body>
     <div class="page-header">
-        <div class="header-logo">LOGO PELINDO</div>
+        <div class="header-logo"><img src="/logo/logo_pelindo.png" alt="Logo Pelindo" style="height: 2cm; max-width: 100%;" /></div>
         <div class="header-company">PT ILCS PELINDO</div>
     </div>
     
@@ -1117,12 +1109,12 @@ const CreateContractPage = () => {
         <div class="document-title">
             <h1>KONTRAK KERJA KONSTRUKSI</h1>
             <div class="contract-number">NOMOR: <span class="dynamic">${contractNumber}</span></div>
-            <div class="project-name"><span class="dynamic">${project_name || 'Tidak ditentukan'}</span></div>
+            <div class="project-name"><span class="dynamic">${project_name || 'PT ILCS Pelindo'}</span></div>
             <div class="package-name"><span class="dynamic">${contract_type || 'Construction'}</span></div>
         </div>
         
         <div class="contract-intro">
-            <p><strong>KONTRAK KERJA KONSTRUKSI</strong> ini dibuat dan ditandatangani di <strong><span class="dynamic">${signing_place || 'Tidak ditentukan'}</span></strong> pada hari ini, tanggal <strong><span class="dynamic">${indonesianDate}</span></strong>, antara:</p>
+            <p><strong>KONTRAK KERJA KONSTRUKSI</strong> ini dibuat dan ditandatangani di <strong><span class="dynamic">${signing_place || 'PT ILCS Pelindo'}</span></strong> pada hari ini, tanggal <strong><span class="dynamic">${indonesianDate}</span></strong>, antara:</p>
         </div>
         
         <div class="party-info">
@@ -1130,8 +1122,8 @@ const CreateContractPage = () => {
             <table class="info-table">
                 <tr><td>Nama</td><td>:</td><td>PT ILCS PELINDO</td></tr>
                 <tr><td>Alamat</td><td>:</td><td>Jl. Raya Pelabuhan No. 1, Jakarta Utara</td></tr>
-                <tr><td>Diwakili oleh</td><td>:</td><td><span class="dynamic">${institutionStakeholder?.representative_name || 'Tidak ditentukan'}</span></td></tr>
-                <tr><td>Jabatan</td><td>:</td><td><span class="dynamic">${institutionStakeholder?.representative_title || 'Tidak ditentukan'}</span></td></tr>
+                <tr><td>Diwakili oleh</td><td>:</td><td><span class="dynamic">${institutionStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></td></tr>
+                <tr><td>Jabatan</td><td>:</td><td><span class="dynamic">${institutionStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></td></tr>
             </table>
             <p>Selanjutnya disebut sebagai <strong>"PENGGUNA JASA"</strong></p>
         </div>
@@ -1139,10 +1131,10 @@ const CreateContractPage = () => {
         <div class="party-info">
             <p><strong>PIHAK KEDUA:</strong></p>
             <table class="info-table">
-                <tr><td>Nama</td><td>:</td><td><span class="dynamic">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></td></tr>
+                <tr><td>Nama</td><td>:</td><td><span class="dynamic">${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></td></tr>
                 <tr><td>Alamat</td><td>:</td><td><span class="dynamic">[Alamat Perusahaan]</span></td></tr>
-                <tr><td>Diwakili oleh</td><td>:</td><td><span class="dynamic">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></td></tr>
-                <tr><td>Jabatan</td><td>:</td><td><span class="dynamic">${contractorStakeholder?.representative_title || 'Tidak ditentukan'}</span></td></tr>
+                <tr><td>Diwakili oleh</td><td>:</td><td><span class="dynamic">${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></td></tr>
+                <tr><td>Jabatan</td><td>:</td><td><span class="dynamic">${contractorStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></td></tr>
                 <tr><td>Nomor Izin</td><td>:</td><td><span class="dynamic">CONST-2024-001</span></td></tr>
             </table>
             <p>Selanjutnya disebut sebagai <strong>"PENYEDIA JASA"</strong></p>
@@ -1150,13 +1142,13 @@ const CreateContractPage = () => {
         
         <div class="section-header">INFORMASI KONTRAK</div>
         <table class="info-table">
-            <tr><td>Jenis Kontrak</td><td>:</td><td><span class="dynamic">${contract_type || 'Tidak ditentukan'}</span></td></tr>
-            <tr><td>Nama Proyek</td><td>:</td><td><span class="dynamic">${project_name || 'Tidak ditentukan'}</span></td></tr>
+            <tr><td>Jenis Kontrak</td><td>:</td><td><span class="dynamic">${contract_type || 'PT ILCS Pelindo'}</span></td></tr>
+            <tr><td>Nama Proyek</td><td>:</td><td><span class="dynamic">${project_name || 'PT ILCS Pelindo'}</span></td></tr>
             <tr><td>Nama Paket</td><td>:</td><td><span class="dynamic">${contract_type || 'Construction'}</span></td></tr>
             <tr><td>Nilai Kontrak</td><td>:</td><td><span class="dynamic">${indonesianCurrency}</span></td></tr>
             <tr><td></td><td></td><td><span class="dynamic">(${indonesianWords})</span></td></tr>
-            <tr><td>Sumber Pembiayaan</td><td>:</td><td><span class="dynamic">${funding_source || 'Tidak ditentukan'}</span></td></tr>
-            <tr><td>Tempat Penandatanganan</td><td>:</td><td><span class="dynamic">${signing_place || 'Tidak ditentukan'}</span></td></tr>
+            <tr><td>Sumber Pembiayaan</td><td>:</td><td><span class="dynamic">${funding_source || 'PT ILCS Pelindo'}</span></td></tr>
+            <tr><td>Tempat Penandatanganan</td><td>:</td><td><span class="dynamic">${signing_place || 'PT ILCS Pelindo'}</span></td></tr>
             <tr><td>Tanggal Penandatanganan</td><td>:</td><td><span class="dynamic">${indonesianDate}</span></td></tr>
         </table>
         
@@ -1166,10 +1158,10 @@ const CreateContractPage = () => {
         <div class="section-header">KETENTUAN KONTRAK</div>
         <div class="contract-clause">
             <div class="subsection-header">PASAL 003 - HARGA KONTRAK, SUMBER PEMBIAYAAN DAN PEMBAYARAN</div>
-            <div class="clause-content">
+            <div>
                 <p>(1) Harga Kontrak termasuk Pajak Pertambahan Nilai (PPN) yang diperoleh berdasarkan total harga penawaran terkoreksi sebagaimana tercantum dalam Daftar Kuantitas dan Harga (BoQ) adalah sebesar <span class="dynamic">${indonesianCurrency}</span> <span class="dynamic">(${indonesianWords})</span> termasuk PPN 11%, PPh 1,5% dan bunga diskonto SCF.</p>
                 <p>(2) Harga pekerjaan dalam perjanjian ini merupakan Harga Satuan Tetap (Unit Price), dimana harga satuan yang tersebut pada daftar kuantitas pekerjaan merupakan kuantitas perkiraan.</p>
-                <p>(3) Kontrak ini dibiayai dari <span class="dynamic">${funding_source || 'Tidak ditentukan'}</span>.</p>
+                <p>(3) Kontrak ini dibiayai dari <span class="dynamic">${funding_source || 'PT ILCS Pelindo'}</span>.</p>
                 <p>(4) Pihak Pertama melakukan pembayaran uang muka maksimum 10% dengan counter jaminan bank garansi kepada Pihak Kedua, sebelum barang diproduksi.</p>
                 <p>(5) Pihak Kedua dapat menagihkan biaya sebesar 50% dari harga produksi material yang sudah terproduksi, 25% dari progress distribusi, dan 25% setelah stressing kepada Pihak Pertama setelah dilakukan checklist bersama terhadap material yang akan diprogres dengan konsultan/owner dan dituangkan dalam berita acara.</p>
                 <p>(6) Pembayaran untuk kontrak ini dilakukan ke rekening sebagai berikut:</p>
@@ -1181,14 +1173,14 @@ const CreateContractPage = () => {
         
         <div class="contract-clause">
             <div class="subsection-header">PASAL KEDUA - <span class="dynamic">[JUDUL KLAUSUL]</span></div>
-            <div class="clause-content">
+            <div>
                 <p><span class="dynamic">[Isi klausul akan diambil dari database berdasarkan clause_template_id kedua]</span></p>
             </div>
         </div>
         
         <div class="contract-clause">
             <div class="subsection-header">PASAL KETIGA - <span class="dynamic">[JUDUL KLAUSUL]</span></div>
-            <div class="clause-content">
+            <div>
                 <p><span class="dynamic">[Isi klausul akan diambil dari database berdasarkan clause_template_id ketiga]</span></p>
             </div>
         </div>
@@ -1196,21 +1188,21 @@ const CreateContractPage = () => {
         <div class="section-header">KETENTUAN UMUM</div>
         <div class="contract-clause">
             <div class="subsection-header">BERLAKUNYA KONTRAK</div>
-            <div class="clause-content">
+            <div>
                 <p>Kontrak ini mulai berlaku sejak tanggal penandatanganan dan berakhir setelah seluruh kewajiban para pihak telah dipenuhi.</p>
             </div>
         </div>
         
         <div class="contract-clause">
             <div class="subsection-header">PENYELESAIAN PERSELISIHAN</div>
-            <div class="clause-content">
+            <div>
                 <p>Segala perselisihan yang timbul dari pelaksanaan kontrak ini akan diselesaikan melalui musyawarah mufakat. Apabila tidak tercapai kesepakatan, maka akan diselesaikan melalui arbitrase sesuai dengan peraturan yang berlaku.</p>
             </div>
         </div>
         
         <div class="contract-clause">
             <div class="subsection-header">FORCE MAJEURE</div>
-            <div class="clause-content">
+            <div>
                 <p>Para pihak dibebaskan dari tanggung jawab atas keterlambatan atau kegagalan pelaksanaan kontrak yang disebabkan oleh keadaan kahar (force majeure).</p>
             </div>
         </div>
@@ -1218,10 +1210,10 @@ const CreateContractPage = () => {
         <div class="signature-section margin-top-1">
             <table class="signature-table">
                 <tr><td><strong>PIHAK PERTAMA</strong></td><td><strong>PIHAK KEDUA</strong></td></tr>
-                <tr><td><strong>PT ILCS PELINDO</strong></td><td><strong><span class="dynamic">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></strong></td></tr>
+                <tr><td><strong>PT ILCS PELINDO</strong></td><td><strong><span class="dynamic">${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></strong></td></tr>
                 <tr><td><div class="signature-line"></div></td><td><div class="signature-line"></div></td></tr>
-                <tr><td><span class="dynamic">${institutionStakeholder?.representative_name || 'Tidak ditentukan'}</span></td><td><span class="dynamic">${contractorStakeholder?.representative_name || 'Tidak ditentukan'}</span></td></tr>
-                <tr><td><span class="dynamic">${institutionStakeholder?.representative_title || 'Tidak ditentukan'}</span></td><td><span class="dynamic">${contractorStakeholder?.representative_title || 'Tidak ditentukan'}</span></td></tr>
+                <tr><td><span class="dynamic">${institutionStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></td><td><span class="dynamic">${contractorStakeholder?.representative_name || 'PT ILCS Pelindo'}</span></td></tr>
+                <tr><td><span class="dynamic">${institutionStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></td><td><span class="dynamic">${contractorStakeholder?.representative_title || 'PT ILCS Pelindo'}</span></td></tr>
             </table>
         </div>
         
@@ -1473,9 +1465,7 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
       errors.push('Signing date is required');
     }
     
-    if (formData.total_value <= 0) {
-      errors.push('Total value must be greater than 0');
-    }
+    // Total value can be 0, so we don't validate it
     
     // Check if at least one stakeholder is filled
     const hasValidStakeholder = formData.stakeholders.some(stakeholder => 

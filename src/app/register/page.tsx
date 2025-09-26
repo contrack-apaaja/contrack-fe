@@ -1,5 +1,7 @@
 "use client";
 
+import Image from 'next/image';
+
 import { RegisterForm } from "@/app/components/auth/RegisterForm";
 
 export default function RegisterPage() {
@@ -7,6 +9,12 @@ export default function RegisterPage() {
     <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-3/5 bg-blue-600 relative p-8 overflow-hidden">
         <div className="absolute top-8 left-8 flex items-center gap-2 text-white text-xl font-bold z-10">
+          <Image
+            src="/logo/white.png"
+            alt="Contrack Logo"
+            width={16}
+            height={16}
+          />
           <span>contrack.</span>
         </div>
 
