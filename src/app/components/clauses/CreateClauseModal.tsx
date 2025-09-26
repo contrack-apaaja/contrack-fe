@@ -85,8 +85,8 @@ export function CreateClauseModal({ isOpen, onClose, onSuccess }: CreateClauseMo
     try {
       console.log(formData)
       clausesApi.createClause(formData)
-      handleCloseCreateDialog()
       onSuccess()
+      handleCloseCreateDialog()
     } catch (error) {
       console.error("Error creating clause:", error)
     } finally {

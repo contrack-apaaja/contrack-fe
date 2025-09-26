@@ -123,7 +123,7 @@ export default function ClausesPage() {
     };
 
     loadClauses();
-  }, [currentPage, debouncedSearchQuery]);
+  }, [currentPage, debouncedSearchQuery, refreshTrigger]); // Added refreshTrigger to dependencies
 
   const handlePreviousPage = () => {
     if (pagination.has_prev) setCurrentPage((prev) => prev - 1);
