@@ -66,10 +66,10 @@ const SimpleSelect = ({ value, onValueChange, children, className = "" }: Simple
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           if (child.type === SimpleSelectTrigger) {
-            return React.cloneElement(child, { 
+            return React.cloneElement(child as React.ReactElement<any>, {
               ref: triggerRef,
               onClick: handleTriggerClick,
-              isOpen 
+              isOpen
             });
           }
           if (child.type === SimpleSelectContent) {
