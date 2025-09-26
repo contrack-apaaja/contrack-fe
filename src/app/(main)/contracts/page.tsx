@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, Save, Edit, Eye, FileText, TrendingUp, Filter, X } from "lucide-react";
+import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, Save, Edit, Eye, FileText, TrendingUp, Filter, X, Download, Calendar, DollarSign, Users, FileCheck, AlertTriangle, Shield, Clock, Building, MapPin, User, CheckCircle, Activity, History } from "lucide-react";
 import { Button } from "@/app/components/Button";
 import { Input } from "@/components/ui/input";
 import { UltraSimpleSelect } from "@/app/components/ui/ultra-simple-select";
@@ -76,6 +76,7 @@ export default function ContractsPage() {
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'stakeholders' | 'clauses' | 'analysis' | 'audit'>('overview');
   
   // Create/Update dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -505,6 +506,71 @@ export default function ContractsPage() {
   };
 
   const activeFilterCount = getActiveFilterCount();
+
+  // Calculate contract metrics for visualization
+  const calculateContractMetrics = (contract: Contract) => {
+    // Timeline progress (based on status)
+    const statusProgress = {
+      'DRAFT': 20,
+      'PENDING_LEGAL_REVIEW': 40,
+      'PENDING_SIGNATURE': 60,
+      'ACTIVE': 80,
+      'EXPIRED': 100,
+      'TERMINATED': 100
+    };
+
+    // Risk score calculation (simplified)
+    const getRiskScore = () => {
+      let riskScore = 0;
+      if (contract.total_value > 1000000) riskScore += 30;
+      else if (contract.total_value > 500000) riskScore += 20;
+      else riskScore += 10;
+
+      if (contract.contract_type === 'Construction') riskScore += 25;
+      else if (contract.contract_type === 'Software Development') riskScore += 15;
+      else riskScore += 10;
+
+      if (contract.status === 'DRAFT') riskScore += 15;
+      else if (contract.status === 'PENDING_LEGAL_REVIEW') riskScore += 10;
+
+      return Math.min(riskScore, 100);
+    };
+
+    // Compliance score (simplified)
+    const getComplianceScore = () => {
+      let score = 100;
+      if (!contract.signing_date) score -= 10;
+      if (!contract.signing_place) score -= 5;
+      if (!contract.funding_source) score -= 10;
+      if (!contract.stakeholders || contract.stakeholders.length === 0) score -= 15;
+      if (!contract.clauses || contract.clauses.length === 0) score -= 20;
+      return Math.max(score, 0);
+    };
+
+    return {
+      timeline: statusProgress[contract.status] || 0,
+      risk: getRiskScore(),
+      compliance: getComplianceScore()
+    };
+  };
+
+  // Mock audit trail data (since we don't have real audit data)
+  const generateAuditTrail = (contract: Contract) => [
+    {
+      id: 1,
+      action: 'Contract Created',
+      user: contract.created_by,
+      timestamp: contract.created_at,
+      details: `Contract ${contract.contract_number} was created for ${contract.project_name}`
+    },
+    {
+      id: 2,
+      action: 'Status Updated',
+      user: contract.created_by,
+      timestamp: contract.updated_at,
+      details: `Status changed to ${contract.status.replace(/_/g, ' ')}`
+    }
+  ];
 
   // Pagination - get current page data from filtered contracts
   const totalPages = Math.ceil(filteredContracts.length / itemsPerPage);
@@ -941,210 +1007,669 @@ export default function ContractsPage() {
         )}
 
         {/* Contract Details Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <DialogTitle className="text-xl font-semibold">
-                    {selectedContract?.project_name}
-                  </DialogTitle>
-                  <DialogDescription className="mt-1">
-                    Contract #{selectedContract?.contract_number} • Version {selectedContract?.version_number}
-                  </DialogDescription>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) setActiveTab('overview'); // Reset tab when closing
+        }}>
+          <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+            {selectedContract && (
+              <>
+          {/* Prominent Header */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-6 py-5 -mx-6 -mt-6 mb-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            {selectedContract.project_name}
+                </h2>
+                <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
+            <span className="flex items-center">
+              <FileText className="h-4 w-4 mr-1" />
+              {selectedContract.contract_number}
+            </span>
+            <span className="flex items-center">
+              <Building className="h-4 w-4 mr-1" />
+              {selectedContract.contract_type}
+            </span>
+            <span className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              v{selectedContract.version_number}
+            </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => selectedContract && handlePreview(selectedContract)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
-                  </Button>
-                  {selectedContract?.status === 'DRAFT' && (
-                    <Button
-                      variant="secondary"
-                      onClick={() => selectedContract && handleUpdate(selectedContract)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                  )}
+                
+                {/* Key Metrics Cards */}
+                <div className="flex items-center space-x-6">
+            <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-xs text-gray-500">Contract Value</p>
+                  <p className="font-semibold text-gray-900">{formatCurrency(selectedContract.total_value)}</p>
                 </div>
               </div>
-            </DialogHeader>
+            </div>
+            
+            <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
+              <div className="flex items-center space-x-2">
+                <span className={`h-3 w-3 rounded-full ${
+                  selectedContract.status === 'ACTIVE' ? 'bg-green-500' :
+                  selectedContract.status === 'DRAFT' ? 'bg-yellow-500' :
+                  selectedContract.status === 'TERMINATED' ? 'bg-red-500' :
+                  'bg-blue-500'
+                }`} />
+                <div>
+                  <p className="text-xs text-gray-500">Status</p>
+                  <p className="font-semibold text-gray-900">{selectedContract.status.replace(/_/g, ' ')}</p>
+                </div>
+              </div>
+            </div>
 
-            {selectedContract && (
-              <div className="space-y-6">
-                {/* Contract Metadata */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Project Name</label>
-                      <p className="text-sm text-gray-900">{selectedContract.project_name}</p>
-                    </div>
-                    {selectedContract.package_name && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Package Name</label>
-                        <p className="text-sm text-gray-900">{selectedContract.package_name}</p>
-                      </div>
-                    )}
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Contract Type</label>
-                      <p className="text-sm text-gray-900">{selectedContract.contract_type}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Status</label>
-                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedContract.status)}`}>
-                        {selectedContract.status.replace(/_/g, ' ')}
-                      </span>
-                    </div>
+            {(() => {
+              const metrics = calculateContractMetrics(selectedContract);
+              return (
+                <>
+                  <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
+              <div className="flex items-center space-x-2">
+                <Shield className={`h-5 w-5 ${
+                  metrics.risk < 30 ? 'text-green-600' :
+                  metrics.risk < 60 ? 'text-yellow-600' :
+                  'text-red-600'
+                }`} />
+                <div>
+                  <p className="text-xs text-gray-500">Risk Level</p>
+                  <p className="font-semibold text-gray-900">{metrics.risk}%</p>
+                </div>
+              </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className={`h-5 w-5 ${
+                  metrics.compliance > 80 ? 'text-green-600' :
+                  metrics.compliance > 60 ? 'text-yellow-600' :
+                  'text-red-600'
+                }`} />
+                <div>
+                  <p className="text-xs text-gray-500">Compliance</p>
+                  <p className="font-semibold text-gray-900">{metrics.compliance}%</p>
+                </div>
+              </div>
+                  </div>
+                </>
+              );
+            })()}
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-3">
+                <Button
+            variant="secondary"
+            onClick={() => handlePreview(selectedContract)}
+                >
+            <Eye className="h-4 w-4 mr-2" />
+            Preview
+                </Button>
+                
+                {/* Download only enabled for Active contracts */}
+                <Button
+            variant="secondary"
+            disabled={selectedContract.status !== 'ACTIVE'}
+            onClick={() => {
+              // Handle download logic
+              console.log('Download contract:', selectedContract.id);
+            }}
+                >
+            <Download className="h-4 w-4 mr-2" />
+            Download
+                </Button>
+                
+                {selectedContract.status === 'DRAFT' && (
+            <Button
+              variant="secondary"
+              onClick={() => handleUpdate(selectedContract)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200 -mx-6 px-6 mb-6">
+            <nav className="flex space-x-8">
+              {[
+                { id: 'overview', label: 'Overview', icon: Info },
+                { id: 'stakeholders', label: 'Stakeholders', icon: Users },
+                { id: 'clauses', label: 'Clauses', icon: FileCheck },
+                { id: 'analysis', label: 'AI Analysis', icon: TrendingUp },
+                { id: 'audit', label: 'Audit Trail', icon: History }
+              ].map((tab) => {
+                const IconComponent = tab.icon;
+                return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as 'overview' | 'stakeholders' | 'clauses' | 'analysis' | 'audit')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <IconComponent className="h-4 w-4" />
+              <span>{tab.label}</span>
+            </button>
+                );
+              })}
+            </nav>
+          </div>
+              </>
+            )}
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              {selectedContract && (
+          <>
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <div className="space-y-8">
+                {/* Progress Metrics */}
+                {(() => {
+            const metrics = calculateContractMetrics(selectedContract);
+            return (
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-6 flex items-center">
+                  <Activity className="h-5 w-5 mr-2 text-blue-600" />
+                  Contract Metrics
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">Timeline Progress</span>
+                <span className="text-sm text-gray-600">{metrics.timeline}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${metrics.timeline}%` }}
+                />
+              </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Total Value</label>
-                      <p className="text-sm text-gray-900 font-semibold">{formatCurrency(selectedContract.total_value)}</p>
-                    </div>
-                    {selectedContract.signing_date && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Signing Date</label>
-                        <p className="text-sm text-gray-900">{formatDate(selectedContract.signing_date)}</p>
-                      </div>
-                    )}
-                    {selectedContract.signing_place && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Signing Place</label>
-                        <p className="text-sm text-gray-900">{selectedContract.signing_place}</p>
-                      </div>
-                    )}
-                    {selectedContract.funding_source && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Funding Source</label>
-                        <p className="text-sm text-gray-900">{selectedContract.funding_source}</p>
-                      </div>
-                    )}
+                  <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">Risk Level</span>
+                <span className="text-sm text-gray-600">{metrics.risk}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    metrics.risk < 30 ? 'bg-green-500' :
+                    metrics.risk < 60 ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}
+                  style={{ width: `${metrics.risk}%` }}
+                />
+              </div>
+                  </div>
+                  
+                  <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">Compliance Score</span>
+                <span className="text-sm text-gray-600">{metrics.compliance}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    metrics.compliance > 80 ? 'bg-green-500' :
+                    metrics.compliance > 60 ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}
+                  style={{ width: `${metrics.compliance}%` }}
+                />
+              </div>
                   </div>
                 </div>
+              </div>
+            );
+                })()}
 
-                {/* AI Analysis Section - Similar to Clause Content */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
-                    AI Analysis
-                  </h3>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="space-y-3">
-                      <div>
-                        <h4 className="font-medium text-blue-900">Risk Assessment</h4>
-                        <p className="text-sm text-blue-800 mt-1">
-                          This contract shows moderate risk levels. The high-value nature and construction type require careful monitoring of milestone deliverables.
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-blue-900">Key Insights</h4>
-                        <ul className="text-sm text-blue-800 mt-1 space-y-1">
-                          <li>• Contract value is within expected range for this project type</li>
-                          <li>• Status progression is normal for current stage</li>
-                          <li>• {selectedContract.stakeholders?.length || 0} stakeholders involved</li>
-                          <li>• {selectedContract.clauses?.length || 0} clauses defined</li>
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-blue-900">Recommendations</h4>
-                        <p className="text-sm text-blue-800 mt-1">
-                          Consider adding performance bonds for construction projects of this value. Review milestone payment schedule alignment with deliverables.
-                        </p>
-                      </div>
-                    </div>
+                {/* Contract Information Groups */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Legal Information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h4 className="text-lg font-semibold mb-6 flex items-center">
+                <FileText className="h-5 w-5 mr-2 text-gray-600" />
+                Legal Information
+              </h4>
+              <div className="space-y-6">
+                <div className="flex items-start space-x-3">
+                  <Building className="h-4 w-4 mt-1 text-gray-400" />
+                  <div className="flex-1">
+              <label className="text-sm font-medium text-gray-500">Project Name</label>
+              <p className="text-sm text-gray-900 mt-1">{selectedContract.project_name}</p>
                   </div>
                 </div>
-
-                {/* Stakeholders */}
-                {selectedContract.stakeholders && selectedContract.stakeholders.length > 0 && (
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-semibold mb-4">Stakeholders</h3>
-                    <div className="space-y-3">
-                      {selectedContract.stakeholders.map((stakeholder) => (
-                        <div key={stakeholder.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium">{stakeholder.stakeholder.legal_name}</h4>
-                              <p className="text-sm text-gray-600">{stakeholder.role_in_contract}</p>
-                            </div>
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                              {stakeholder.stakeholder.type}
-                            </span>
-                          </div>
-                          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <span className="text-gray-500">Representative:</span>
-                              <span className="ml-1">{stakeholder.representative_name}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Title:</span>
-                              <span className="ml-1">{stakeholder.representative_title}</span>
-                            </div>
-                          </div>
-                          {stakeholder.stakeholder.address && (
-                            <div className="mt-2 text-sm">
-                              <span className="text-gray-500">Address:</span>
-                              <span className="ml-1">{stakeholder.stakeholder.address}</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                
+                {selectedContract.package_name && (
+                  <div className="flex items-start space-x-3">
+              <FileText className="h-4 w-4 mt-1 text-gray-400" />
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-500">Package Name</label>
+                <p className="text-sm text-gray-900 mt-1">{selectedContract.package_name}</p>
+              </div>
                   </div>
                 )}
-
-                {/* Contract Clauses */}
-                {selectedContract.clauses && selectedContract.clauses.length > 0 && (
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-semibold mb-4">Contract Clauses</h3>
-                    <div className="space-y-3">
-                      {selectedContract.clauses
-                        .sort((a, b) => a.display_order - b.display_order)
-                        .map((clause) => (
-                        <div key={clause.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h4 className="font-medium">{clause.clause_template.title}</h4>
-                              <p className="text-sm text-gray-600">Code: {clause.clause_template.clause_code}</p>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
-                                {clause.clause_template.type}
-                              </span>
-                              <p className="text-xs text-gray-500 mt-1">Order: {clause.display_order}</p>
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-700">
-                            {clause.custom_content || clause.clause_template.content}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                
+                <div className="flex items-start space-x-3">
+                  <FileCheck className="h-4 w-4 mt-1 text-gray-400" />
+                  <div className="flex-1">
+              <label className="text-sm font-medium text-gray-500">Contract Type</label>
+              <p className="text-sm text-gray-900 mt-1">{selectedContract.contract_type}</p>
+                  </div>
+                </div>
+                
+                {selectedContract.external_reference && (
+                  <div className="flex items-start space-x-3">
+              <FileText className="h-4 w-4 mt-1 text-gray-400" />
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-500">External Reference</label>
+                <p className="text-sm text-gray-900 mt-1">{selectedContract.external_reference}</p>
+              </div>
                   </div>
                 )}
+              </div>
+            </div>
 
-                {/* Contract Metadata Footer */}
-                <div className="border-t pt-4 text-xs text-gray-500 space-y-1">
-                  <p>Created: {formatDate(selectedContract.created_at)}</p>
-                  <p>Last Modified: {formatDate(selectedContract.updated_at)}</p>
-                  <p>Base ID: {selectedContract.base_id}</p>
-                  {selectedContract.external_reference && (
-                    <p>External Reference: {selectedContract.external_reference}</p>
-                  )}
+            {/* Financial Information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h4 className="text-lg font-semibold mb-6 flex items-center">
+                <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                Financial Information
+              </h4>
+              <div className="space-y-6">
+                <div className="flex items-start space-x-3">
+                  <DollarSign className="h-4 w-4 mt-1 text-gray-400" />
+                  <div className="flex-1">
+              <label className="text-sm font-medium text-gray-500">Total Value</label>
+              <p className="text-lg font-bold text-green-600 mt-1">{formatCurrency(selectedContract.total_value)}</p>
+                  </div>
+                </div>
+                
+                {selectedContract.funding_source && (
+                  <div className="flex items-start space-x-3">
+              <Building className="h-4 w-4 mt-1 text-gray-400" />
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-500">Funding Source</label>
+                <p className="text-sm text-gray-900 mt-1">{selectedContract.funding_source}</p>
+              </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Timeline Information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h4 className="text-lg font-semibold mb-6 flex items-center">
+                <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                Timeline Information
+              </h4>
+              <div className="space-y-6">
+                {selectedContract.signing_date && (
+                  <div className="flex items-start space-x-3">
+              <Calendar className="h-4 w-4 mt-1 text-gray-400" />
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-500">Signing Date</label>
+                <p className="text-sm text-gray-900 mt-1">{formatDate(selectedContract.signing_date)}</p>
+              </div>
+                  </div>
+                )}
+                
+                {selectedContract.signing_place && (
+                  <div className="flex items-start space-x-3">
+              <MapPin className="h-4 w-4 mt-1 text-gray-400" />
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-500">Signing Place</label>
+                <p className="text-sm text-gray-900 mt-1">{selectedContract.signing_place}</p>
+              </div>
+                  </div>
+                )}
+                
+                <div className="flex items-start space-x-3">
+                  <Clock className="h-4 w-4 mt-1 text-gray-400" />
+                  <div className="flex-1">
+              <label className="text-sm font-medium text-gray-500">Created</label>
+              <p className="text-sm text-gray-900 mt-1">{formatDate(selectedContract.created_at)}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-3">
+                  <Clock className="h-4 w-4 mt-1 text-gray-400" />
+                  <div className="flex-1">
+              <label className="text-sm font-medium text-gray-500">Last Modified</label>
+              <p className="text-sm text-gray-900 mt-1">{formatDate(selectedContract.updated_at)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h4 className="text-lg font-semibold mb-6 flex items-center">
+                <Shield className="h-5 w-5 mr-2 text-purple-600" />
+                Status Information
+              </h4>
+              <div className="space-y-6">
+                <div className="flex items-start space-x-3">
+                  <div className={`h-4 w-4 mt-1 rounded-full ${
+              selectedContract.status === 'ACTIVE' ? 'bg-green-500' :
+              selectedContract.status === 'DRAFT' ? 'bg-yellow-500' :
+              selectedContract.status === 'TERMINATED' ? 'bg-red-500' :
+              'bg-blue-500'
+                  }`} />
+                  <div className="flex-1">
+              <label className="text-sm font-medium text-gray-500">Current Status</label>
+              <p className="text-sm font-semibold text-gray-900 mt-1">{selectedContract.status.replace(/_/g, ' ')}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-3">
+                  <User className="h-4 w-4 mt-1 text-gray-400" />
+                  <div className="flex-1">
+              <label className="text-sm font-medium text-gray-500">Created By</label>
+              <p className="text-sm text-gray-900 mt-1">{selectedContract.created_by}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
                 </div>
               </div>
             )}
 
-            <DialogFooter>
-              <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>
-                Close
-              </Button>
-            </DialogFooter>
+            {/* Stakeholders Tab */}
+            {activeTab === 'stakeholders' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold flex items-center">
+              <Users className="h-5 w-5 mr-2 text-blue-600" />
+              Stakeholders ({selectedContract.stakeholders?.length || 0})
+            </h3>
+                </div>
+                
+                {selectedContract.stakeholders && selectedContract.stakeholders.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {selectedContract.stakeholders.map((stakeholder) => (
+                <div key={stakeholder.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex justify-between items-start mb-6">
+              <div className="flex items-start space-x-3">
+                <div className="bg-blue-100 rounded-full p-2">
+                  <Building className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">{stakeholder.stakeholder.legal_name}</h4>
+                  <p className="text-sm text-blue-600 font-medium mt-1">{stakeholder.role_in_contract}</p>
+                </div>
+              </div>
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                {stakeholder.stakeholder.type}
+              </span>
+                  </div>
+                  
+                  <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4 text-gray-400" />
+                <div>
+                  <span className="text-sm text-gray-500">Representative: </span>
+                  <span className="text-sm font-medium text-gray-900">{stakeholder.representative_name}</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <FileText className="h-4 w-4 text-gray-400" />
+                <div>
+                  <span className="text-sm text-gray-500">Title: </span>
+                  <span className="text-sm font-medium text-gray-900">{stakeholder.representative_title}</span>
+                </div>
+              </div>
+              
+              {stakeholder.stakeholder.address && (
+                <div className="flex items-start space-x-2">
+                  <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
+                  <div>
+                    <span className="text-sm text-gray-500">Address: </span>
+                    <span className="text-sm text-gray-900">{stakeholder.stakeholder.address}</span>
+                  </div>
+                </div>
+              )}
+                  </div>
+                </div>
+              ))}
+            </div>
+                ) : (
+            <div className="text-center py-16">
+              <Users className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No stakeholders defined for this contract</p>
+            </div>
+                )}
+              </div>
+            )}
+
+            {/* Clauses Tab */}
+            {activeTab === 'clauses' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold flex items-center">
+              <FileCheck className="h-5 w-5 mr-2 text-green-600" />
+              Contract Clauses ({selectedContract.clauses?.length || 0})
+            </h3>
+                </div>
+                
+                {selectedContract.clauses && selectedContract.clauses.length > 0 ? (
+            <div className="space-y-6">
+              {selectedContract.clauses
+                .sort((a, b) => a.display_order - b.display_order)
+                .map((clause) => (
+                <div key={clause.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-6">
+              <div className="flex items-start space-x-3">
+                <div className="bg-green-100 rounded-full p-2">
+                  <FileCheck className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">{clause.clause_template.title}</h4>
+                  <p className="text-sm text-gray-500 mt-1">Code: {clause.clause_template.clause_code}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full mb-1 inline-block">
+                  {clause.clause_template.type}
+                </span>
+                <p className="text-xs text-gray-500">Order: {clause.display_order}</p>
+              </div>
+                  </div>
+                  <div className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg p-4">
+              {clause.custom_content || clause.clause_template.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+                ) : (
+            <div className="text-center py-16">
+              <FileCheck className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No clauses defined for this contract</p>
+            </div>
+                )}
+              </div>
+            )}
+
+            {/* AI Analysis Tab */}
+            {activeTab === 'analysis' && (
+              <div className="space-y-8">
+                <h3 className="text-lg font-semibold flex items-center">
+            <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />
+            AI Analysis & Insights
+                </h3>
+
+                {(() => {
+            const metrics = calculateContractMetrics(selectedContract);
+            return (
+              <>
+                {/* Risk Assessment */}
+                <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6">
+                  <div className="flex items-center mb-6">
+              <AlertTriangle className={`h-6 w-6 mr-3 ${
+                metrics.risk < 30 ? 'text-green-600' :
+                metrics.risk < 60 ? 'text-yellow-600' :
+                'text-red-600'
+              }`} />
+              <h4 className="text-lg font-semibold text-gray-900">Risk Assessment</h4>
+              <div className="ml-auto">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  metrics.risk < 30 ? 'bg-green-100 text-green-800' :
+                  metrics.risk < 60 ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {metrics.risk < 30 ? 'Low Risk' : metrics.risk < 60 ? 'Medium Risk' : 'High Risk'}
+                </span>
+              </div>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+              This contract shows {metrics.risk < 30 ? 'low' : metrics.risk < 60 ? 'moderate' : 'high'} risk levels. 
+              The {selectedContract.total_value > 1000000 ? 'high-value' : 'moderate-value'} nature and {selectedContract.contract_type.toLowerCase()} type require 
+              {metrics.risk > 60 ? ' immediate attention and ' : ' '} careful monitoring of milestone deliverables.
+                  </p>
+                </div>
+
+                {/* Key Insights */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-blue-900 mb-6 flex items-center">
+              <TrendingUp className="h-5 w-5 mr-2" />
+              Key Insights
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">Contract value is {selectedContract.total_value > 1000000 ? 'above' : 'within'} expected range</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">Status progression is normal for current stage</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">{selectedContract.stakeholders?.length || 0} stakeholders involved</span>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <FileCheck className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">{selectedContract.clauses?.length || 0} clauses defined</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">Compliance score: {metrics.compliance}%</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">Timeline progress: {metrics.timeline}%</span>
+                </div>
+              </div>
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-green-900 mb-6 flex items-center">
+              <CheckCircle className="h-5 w-5 mr-2" />
+              AI Recommendations
+                  </h4>
+                  <div className="space-y-4">
+              {selectedContract.contract_type === 'Construction' && (
+                <div className="flex items-start space-x-3">
+                  <div className="bg-green-100 rounded-full p-1 mt-0.5">
+                    <CheckCircle className="h-3 w-3 text-green-600" />
+                  </div>
+                  <p className="text-sm text-green-800">Consider adding performance bonds for construction projects of this value</p>
+                </div>
+              )}
+              <div className="flex items-start space-x-3">
+                <div className="bg-green-100 rounded-full p-1 mt-0.5">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                </div>
+                <p className="text-sm text-green-800">Review milestone payment schedule alignment with deliverables</p>
+              </div>
+              {metrics.compliance < 80 && (
+                <div className="flex items-start space-x-3">
+                  <div className="bg-yellow-100 rounded-full p-1 mt-0.5">
+                    <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                  </div>
+                  <p className="text-sm text-green-800">Improve compliance by adding missing contract details</p>
+                </div>
+              )}
+                  </div>
+                </div>
+              </>
+            );
+                })()}
+              </div>
+            )}
+
+            {/* Audit Trail Tab */}
+            {activeTab === 'audit' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold flex items-center">
+            <History className="h-5 w-5 mr-2 text-gray-600" />
+            Audit Trail
+                </h3>
+                
+                <div className="space-y-6">
+            {generateAuditTrail(selectedContract).map((entry) => (
+              <div key={entry.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow">
+                <div className="flex items-start space-x-4">
+                  <div className="bg-blue-100 rounded-full p-2 mt-1">
+              <Activity className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-gray-900">{entry.action}</h4>
+                <time className="text-sm text-gray-500">{formatDate(entry.timestamp)}</time>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">{entry.details}</p>
+              <div className="flex items-center space-x-2">
+                <User className="h-3 w-3 text-gray-400" />
+                <span className="text-xs text-gray-500">{entry.user}</span>
+              </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+                </div>
+              </div>
+            )}
+          </>
+              )}
+            </div>
+
+            {/* Dialog Footer */}
+            <div className="border-t border-gray-200 px-6 py-4 -mx-6 -mb-6 mt-6 bg-gray-50">
+              <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-500">
+            {selectedContract && (
+              <>
+                Base ID: {selectedContract.base_id} • 
+                Created: {formatDate(selectedContract.created_at)}
+              </>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>
+              Close
+            </Button>
+          </div>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
 
