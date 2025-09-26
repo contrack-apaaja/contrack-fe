@@ -365,7 +365,7 @@ export const contractsApi = {
     change_reason: string;
     comments?: string;
   }): Promise<{ data: null }> => {
-    const response = await api.post(`/api/contracts/${id}/status/`, data);
+    const response = await api.post(`/api/contracts/${id}/status`, data);
     return response.data as { data: null };
   },
 
