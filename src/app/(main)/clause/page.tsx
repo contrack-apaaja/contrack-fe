@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Info, ChevronLeft, ChevronRight, Search, Plus } from "lucide-react";
 import { clausesApi } from "@/services/api";
 import { ClauseDetailModal } from "@/app/components/clauses/ClauseDetailModal";
+import { ClauseTable } from "@/app/components/clauses/ClauseTable";
+import { CreateClauseModal } from "@/app/components/clauses/CreateClauseModal";
 
 // =========== INTERFACES (Definisi Tipe Data) ===========
 interface ClauseTemplate {
@@ -54,6 +56,8 @@ export default function ClausesPage() {
   const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1);
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [pagination, setPagination] = useState<PaginationType>({
     page: 1,
     limit: ITEMS_PER_PAGE,
@@ -139,12 +143,16 @@ export default function ClausesPage() {
     setSelectedClause(null)
   }
 
+  const handleCreateSuccess = () => {
+    setRefreshTrigger((prev) => prev + 1)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Halaman */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-foreground">Clauses</h1>
-        <Button
+        <Button onClick={() => setIsCreateModalOpen(true)}
           style={{ backgroundColor: "#137fec", color: "#fff" }}>
           <Plus className="mr-2 h-4 w-4" />
           New Clause
@@ -251,6 +259,15 @@ export default function ClausesPage() {
       )}
 
       <ClauseDetailModal clause={selectedClause} isOpen={isModalOpen} onClose={handleCloseModal} />
+
+      {/* Clause Table */}
+        <ClauseTable key={refreshTrigger} />
+
+        <CreateClauseModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleCreateSuccess}
+        />
     </div>
   );
 }
