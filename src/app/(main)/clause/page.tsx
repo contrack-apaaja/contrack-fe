@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Info, ChevronLeft, ChevronRight, Search, Plus } from "lucide-react";
 import { clausesApi } from "@/services/api";
 import { ClauseDetailModal } from "@/app/components/clauses/ClauseDetailModal";
-import { ClauseTable } from "@/app/components/clauses/ClauseTable";
 import { CreateClauseModal } from "@/app/components/clauses/CreateClauseModal";
 
 // =========== INTERFACES (Definisi Tipe Data) ===========
@@ -266,8 +265,6 @@ export default function ClausesPage() {
       />
 
       {/* Clause Table */}
-        <ClauseTable key={refreshTrigger} />
-
         <CreateClauseModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
