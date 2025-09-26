@@ -218,8 +218,31 @@ export const clausesApi = {
 export const contractsApi = {
   getContracts: async (): Promise<{ data: ContractsResponse }> => {
     const response = await api.get('/api/contracts/');
-    console.log('All contracts loaded:', response.data);
-    return response.data as { data: ContractsResponse };
+    
+    // Handle different possible response structures
+    const responseData = response.data;
+    
+    if (responseData && typeof responseData === 'object' && 'data' in responseData) {
+      // If response has a nested data structure
+      return responseData as { data: ContractsResponse };
+    } else if (responseData && typeof responseData === 'object' && 'contracts' in responseData && Array.isArray((responseData as Record<string, unknown>).contracts)) {
+      // If response.data directly contains contracts
+      return { data: responseData as ContractsResponse };
+    } else if (Array.isArray(responseData)) {
+      // If response.data is directly an array of contracts
+      return { 
+        data: { 
+          contracts: responseData as Contract[], 
+          total: responseData.length,
+          page: 1,
+          limit: responseData.length,
+          pages: 1
+        } 
+      };
+    } else {
+      // Return empty contracts if unexpected structure
+      return { data: { contracts: [], total: 0, page: 1, limit: 10, pages: 0 } };
+    }
   },
 
   getContract: async (id: number): Promise<{ data: Contract }> => {

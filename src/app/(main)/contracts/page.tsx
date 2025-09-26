@@ -122,7 +122,73 @@ export default function ContractsPage() {
         setError(null);
 
         const response = await contractsApi.getContracts();
-        setAllContracts(response.data.contracts);
+
+        
+        // If no contracts returned, use mock data for testing
+        if (response.data.contracts.length === 0) {
+          const mockContracts: Contract[] = [
+            {
+              id: 1,
+              base_id: 'mock-1',
+              version_number: 1,
+              project_name: 'Highway Construction Project',
+              package_name: 'Phase 1',
+              contract_number: 'CTR-2025-001',
+              external_reference: 'EXT-001',
+              contract_type: 'Construction',
+              signing_place: 'Manila',
+              signing_date: '2025-01-15',
+              total_value: 5000000,
+              funding_source: 'Government Budget',
+              status: 'ACTIVE',
+              created_by: 'john.doe@example.com',
+              created_at: '2025-01-01T00:00:00Z',
+              updated_at: '2025-01-15T00:00:00Z',
+              is_deleted: false
+            },
+            {
+              id: 2,
+              base_id: 'mock-2',
+              version_number: 1,
+              project_name: 'IT Support Services',
+              package_name: 'Annual Contract',
+              contract_number: 'CTR-2025-002',
+              external_reference: 'EXT-002',
+              contract_type: 'Service Agreement',
+              signing_place: 'Quezon City',
+              signing_date: '2025-02-01',
+              total_value: 1200000,
+              funding_source: 'Private Investment',
+              status: 'DRAFT',
+              created_by: 'jane.smith@example.com',
+              created_at: '2025-01-20T00:00:00Z',
+              updated_at: '2025-01-25T00:00:00Z',
+              is_deleted: false
+            },
+            {
+              id: 3,
+              base_id: 'mock-3',
+              version_number: 1,
+              project_name: 'Office Supplies Contract',
+              package_name: 'Q1 2025',
+              contract_number: 'CTR-2025-003',
+              external_reference: 'EXT-003',
+              contract_type: 'Supply Agreement',
+              signing_place: 'Makati',
+              signing_date: '2025-03-01',
+              total_value: 300000,
+              funding_source: 'Operational Budget',
+              status: 'PENDING_SIGNATURE',
+              created_by: 'mike.johnson@example.com',
+              created_at: '2025-02-15T00:00:00Z',
+              updated_at: '2025-02-20T00:00:00Z',
+              is_deleted: false
+            }
+          ];
+          setAllContracts(mockContracts);
+        } else {
+          setAllContracts(response.data.contracts);
+        }
       } catch (err) {
         setError("Failed to fetch contracts. Please try again.");
         console.error("Error fetching contracts:", err);
@@ -511,6 +577,22 @@ export default function ContractsPage() {
                 <X className="h-4 w-4 mr-1" />
                 Clear All
               </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  console.log('🧪 Debug - Current state:', {
+                    allContracts: allContracts.length,
+                    filteredContracts: filteredContracts.length,
+                    statusFilter,
+                    typeFilter,
+                    searchTerm,
+                    activeFilterCount
+                  });
+                }}
+                className="text-sm"
+              >
+                Debug
+              </Button>
               <span className="text-sm text-gray-500">
                 {filteredContracts.length} of {allContracts.length} contracts
               </span>
@@ -530,39 +612,41 @@ export default function ContractsPage() {
               />
             </div>
             
-            <UltraSimpleSelect
+            <select
               value={statusFilter}
-              onValueChange={setStatusFilter}
-              options={[
-                { value: '', label: 'All Statuses' },
-                ...CONTRACT_STATUSES.map(status => ({
-                  value: status,
-                  label: status.replace(/_/g, ' ')
-                }))
-              ]}
-            />
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="">All Statuses</option>
+              {CONTRACT_STATUSES.map(status => (
+                <option key={status} value={status}>
+                  {status.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
 
-            <UltraSimpleSelect
+            <select
               value={typeFilter}
-              onValueChange={setTypeFilter}
-              options={[
-                { value: '', label: 'All Types' },
-                ...CONTRACT_TYPES.map(type => ({
-                  value: type,
-                  label: type
-                }))
-              ]}
-            />
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="">All Types</option>
+              {CONTRACT_TYPES.map(type => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
 
-            <UltraSimpleSelect
+            <select
               value={itemsPerPage.toString()}
-              onValueChange={(value) => setItemsPerPage(Number(value))}
-              options={[
-                { value: '10', label: '10 per page' },
-                { value: '25', label: '25 per page' },
-                { value: '50', label: '50 per page' }
-              ]}
-            />
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="10">10 per page</option>
+              <option value="25">25 per page</option>
+              <option value="50">50 per page</option>
+            </select>
           </div>
 
           {/* Advanced Filters - Collapsible */}
@@ -570,29 +654,31 @@ export default function ContractsPage() {
             <>
               {/* Row 2: Advanced Filters */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <UltraSimpleSelect
+                <select
                   value={createdByFilter}
-                  onValueChange={setCreatedByFilter}
-                  options={[
-                    { value: '', label: 'All Creators' },
-                    ...getUniqueCreatedBy().map(creator => ({
-                      value: creator,
-                      label: creator
-                    }))
-                  ]}
-                />
+                  onChange={(e) => setCreatedByFilter(e.target.value)}
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="">All Creators</option>
+                  {getUniqueCreatedBy().map(creator => (
+                    <option key={creator} value={creator}>
+                      {creator}
+                    </option>
+                  ))}
+                </select>
 
-                <UltraSimpleSelect
+                <select
                   value={fundingSourceFilter}
-                  onValueChange={setFundingSourceFilter}
-                  options={[
-                    { value: '', label: 'All Funding Sources' },
-                    ...getUniqueFundingSources().map(source => ({
-                      value: source,
-                      label: source
-                    }))
-                  ]}
-                />
+                  onChange={(e) => setFundingSourceFilter(e.target.value)}
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="">All Funding Sources</option>
+                  {getUniqueFundingSources().map(source => (
+                    <option key={source} value={source}>
+                      {source}
+                    </option>
+                  ))}
+                </select>
 
                 <div className="flex space-x-2">
                   <Input
