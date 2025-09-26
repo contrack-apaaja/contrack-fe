@@ -619,11 +619,11 @@ export default function ContractsPage() {
             <p className="text-gray-600 mt-2">Manage your contracts and track their lifecycle</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button onClick={() => window.location.href = '/contracts/create'} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => window.location.href = '/contracts/create'} className="!bg-blue-600 !hover:bg-blue-700 !text-white !border-blue-600">
               <Plus className="h-4 w-4 mr-2" />
               New Contract
             </Button>
-            <Button variant="secondary" onClick={handleLogout}>
+            <Button onClick={handleLogout} className="!bg-white !hover:bg-gray-50 !text-gray-700 !border-gray-300 !border">
               <LogOut className="h-4 w-4 mr-2" />
               Logout
             </Button>
@@ -650,24 +650,21 @@ export default function ContractsPage() {
             </div>
             <div className="flex items-center space-x-2">
               <Button
-                variant="secondary"
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="text-sm"
+                className="!text-sm !bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200"
               >
                 <Filter className="h-4 w-4 mr-1" />
                 {showAdvancedFilters ? 'Basic' : 'Advanced'}
               </Button>
               <Button
-                variant="secondary" 
                 onClick={clearAllFilters}
-                className="text-sm"
+                className="!text-sm !bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200 !disabled:bg-gray-50 !disabled:text-gray-400 !disabled:border-gray-200"
                 disabled={activeFilterCount === 0}
               >
                 <X className="h-4 w-4 mr-1" />
                 Clear All
               </Button>
               <Button
-                variant="secondary"
                 onClick={() => {
                   console.log('🧪 Debug - Current state:', {
                     allContracts: allContracts.length,
@@ -678,7 +675,7 @@ export default function ContractsPage() {
                     activeFilterCount
                   });
                 }}
-                className="text-sm"
+                className="!text-sm !bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200"
               >
                 Debug
               </Button>
@@ -968,24 +965,34 @@ export default function ContractsPage() {
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center space-x-2">
                         <Button
-                          variant="secondary"
                           onClick={(e) => {
                             e.stopPropagation();
                             handlePreview(contract);
                           }}
-                          className="h-8 w-8 p-0"
+                          className="!h-8 !w-8 !p-0 !bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200 !hover:border-blue-300"
+                          title="Preview Contract"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="secondary"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRowClick(contract);
                           }}
-                          className="h-8 w-8 p-0"
+                          className="!h-8 !w-8 !p-0 !bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200 !hover:border-blue-300"
+                          title="View Details"
                         >
                           <Info className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditContract(contract);
+                          }}
+                          className="!h-8 !w-8 !p-0 !bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200 !hover:border-blue-300"
+                          title="Edit Contract"
+                        >
+                          <Edit className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -1007,9 +1014,9 @@ export default function ContractsPage() {
             </div>
             <div className="flex items-center space-x-2">
               <Button
-                variant="secondary"
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
+                className="!bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200 !disabled:bg-gray-50 !disabled:text-gray-400 !disabled:border-gray-200"
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Previous
@@ -1018,9 +1025,9 @@ export default function ContractsPage() {
                 Page {currentPage} of {totalPages}
               </span>
               <Button
-                variant="secondary"
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
+                className="!bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200 !disabled:bg-gray-50 !disabled:text-gray-400 !disabled:border-gray-200"
               >
                 Next
                 <ChevronRight className="h-4 w-4 ml-1" />
@@ -1127,8 +1134,8 @@ export default function ContractsPage() {
               <div className="flex flex-col space-y-3">
                 <div className="flex items-center space-x-3">
                   <Button
-                    variant="secondary"
                     onClick={() => handlePreview(selectedContract)}
+                    className="!bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200 !hover:border-blue-300"
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     Preview
@@ -1136,12 +1143,12 @@ export default function ContractsPage() {
                   
                   {/* Download only enabled for Active contracts */}
                   <Button
-                    variant="secondary"
                     disabled={selectedContract.status !== 'ACTIVE'}
                     onClick={() => {
                       // Handle download logic
                       console.log('Download contract:', selectedContract.id);
                     }}
+                    className="!bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200 !hover:border-blue-300 !disabled:bg-gray-100 !disabled:text-gray-400 !disabled:border-gray-200"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download
@@ -1150,9 +1157,8 @@ export default function ContractsPage() {
                 
                 <div className="flex items-center">
                   <Button
-                    variant="secondary"
                     onClick={() => handleEditContract(selectedContract)}
-                    className="w-full"
+                    className="!w-full !bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200 !hover:border-blue-300"
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Contract
@@ -1690,7 +1696,7 @@ export default function ContractsPage() {
             )}
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>
+            <Button onClick={() => setIsDialogOpen(false)} className="!bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200">
               Close
             </Button>
           </div>
@@ -1825,13 +1831,13 @@ export default function ContractsPage() {
 
             <DialogFooter>
               <Button
-                variant="secondary"
                 onClick={() => setIsCreateDialogOpen(false)}
                 disabled={isSubmitting}
+                className="!bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200"
               >
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting}>
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="!bg-blue-600 !hover:bg-blue-700 !text-white">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1974,13 +1980,13 @@ export default function ContractsPage() {
 
             <DialogFooter>
               <Button
-                variant="secondary"
                 onClick={() => setIsUpdateDialogOpen(false)}
                 disabled={isSubmitting}
+                className="!bg-white !hover:bg-blue-50 !text-blue-700 !border !border-blue-200"
               >
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting}>
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="!bg-blue-600 !hover:bg-blue-700 !text-white">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
