@@ -234,7 +234,7 @@ export const contractsApi = {
     if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
     if (params?.sort_dir) queryParams.append('sort_dir', params.sort_dir);
 
-    const url = `/api/contracts?${queryParams.toString()}`;
+    const url = `/api/contracts/`;
     const response = await api.get(url);
     console.log(response.data)
     return response.data as { data: ContractsResponse };
