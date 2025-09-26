@@ -41,6 +41,24 @@ export default function ClausesPage() {
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null);
+  
+  // Create/Update dialog state
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    clause_code: '',
+    title: '',
+    type: '',
+    content: '',
+    is_active: true
+  });
+  
+  // Form validation
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  
 
   // Check authentication on component mount
   useEffect(() => {
