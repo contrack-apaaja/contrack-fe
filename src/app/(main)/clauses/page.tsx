@@ -21,11 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/app/components/ui/table";
-import { clausesApi, ClauseTemplate, PaginationInfo, authUtils } from "@/services/api";
+import { clausesApi, ClauseTemplate, authUtils } from "@/services/api";
 
 export default function ClausesPage() {
   const [clauses, setClauses] = useState<ClauseTemplate[]>([]);
-  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,13 +39,11 @@ export default function ClausesPage() {
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null);
-
-  // Create/Update dialog state
+  
+  // Form state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Form state
   const [formData, setFormData] = useState({
     clause_code: '',
     title: '',
@@ -54,10 +51,7 @@ export default function ClausesPage() {
     content: '',
     is_active: true
   });
-
-  // Form validation
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
 
   // Check authentication on component mount
   useEffect(() => {
@@ -83,7 +77,6 @@ export default function ClausesPage() {
       const response = await clausesApi.getClauses();
       console.log(response.data);
       setClauses(response.data.clause_templates);
-      setPagination(response.data.pagination);
     } catch (err) {
       setError("Failed to fetch clauses. Please try again.");
       console.error("Error fetching clauses:", err);
@@ -266,18 +259,19 @@ export default function ClausesPage() {
       setError(null); // Clear any previous errors
       // Refresh the clauses list
       fetchClauses();
-    } catch (err: any) {
-      console.error('❌ Error creating clause:', err);
-      console.error('❌ Error response:', err.response?.data);
-      console.error('❌ Error status:', err.response?.status);
-      console.error('❌ Error headers:', err.response?.headers);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: unknown; message?: string }; status?: number; headers?: unknown }; message?: string };
+      console.error('❌ Error creating clause:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error headers:', error.response?.headers);
 
       // Extract detailed validation errors
       let errorMessage = 'Please try again.';
-
-      if (err.response?.data?.error) {
+      
+      if (error.response?.data?.error) {
         // If there are specific field validation errors
-        const validationErrors = err.response.data.error;
+        const validationErrors = error.response.data.error;
         console.log('🔍 Validation errors:', validationErrors);
 
         if (typeof validationErrors === 'object') {
@@ -289,9 +283,9 @@ export default function ClausesPage() {
           errorMessage = `Validation failed: ${validationErrors}`;
         }
       } else {
-        errorMessage = err.response?.data?.message ||
-                      err.response?.data?.error ||
-                      err.message ||
+        errorMessage = (error.response?.data?.message as string) ||
+                      (error.response?.data?.error as string) ||
+                      error.message ||
                       'Please try again.';
       }
 
@@ -315,11 +309,12 @@ export default function ClausesPage() {
       setError(null); // Clear any previous errors
       // Refresh the clauses list
       fetchClauses();
-    } catch (err: any) {
-      console.error('Error updating clause:', err);
-      console.error('Error response:', err.response?.data);
-      console.error('Error status:', err.response?.status);
-      setError(`Failed to update clause: ${err.response?.data?.message || err.message || 'Please try again.'}`);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string }; status?: number }; message?: string };
+      console.error('Error updating clause:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      setError(`Failed to update clause: ${error.response?.data?.message || error.message || 'Please try again.'}`);
     } finally {
       setIsSubmitting(false);
     }
