@@ -4,10 +4,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
 interface SimpleSelectProps {
-  value: string;
   onValueChange: (value: string) => void;
   children: React.ReactNode;
   className?: string;
+  defaultValue?: string;
 }
 
 interface SimpleSelectTriggerProps {
@@ -30,13 +30,14 @@ interface SimpleSelectValueProps {
   placeholder?: string;
 }
 
-const SimpleSelect = ({ value, onValueChange, children, className = "" }: SimpleSelectProps) => {
+const SimpleSelect = ({ onValueChange, children, className = "", defaultValue }: SimpleSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [selectedValue, setSelectedValue] = useState(defaultValue || "");
+  const selectRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (triggerRef.current && !triggerRef.current.contains(event.target as Node)) {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -51,31 +52,31 @@ const SimpleSelect = ({ value, onValueChange, children, className = "" }: Simple
   }, [isOpen]);
 
   const handleTriggerClick = () => {
-    console.log('🎯 SimpleSelect trigger clicked');
     setIsOpen(!isOpen);
   };
 
   const handleItemClick = (itemValue: string) => {
-    console.log('🎯 SimpleSelect item clicked:', itemValue);
+    setSelectedValue(itemValue);
     onValueChange(itemValue);
     setIsOpen(false);
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div ref={selectRef} className={`relative ${className}`}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           if (child.type === SimpleSelectTrigger) {
-            return React.cloneElement(child, { 
-              ref: triggerRef,
+            return React.cloneElement(child, {
               onClick: handleTriggerClick,
-              isOpen 
+              isOpen,
+              selectedValue
             });
           }
           if (child.type === SimpleSelectContent) {
-            return React.cloneElement(child, { 
+            return React.cloneElement(child, {
               isOpen,
-              onItemClick: handleItemClick
+              onItemClick: handleItemClick,
+              selectedValue
             });
           }
         }
@@ -85,32 +86,56 @@ const SimpleSelect = ({ value, onValueChange, children, className = "" }: Simple
   );
 };
 
-const SimpleSelectTrigger = React.forwardRef<HTMLButtonElement, SimpleSelectTriggerProps & { onClick?: () => void; isOpen?: boolean }>(
-  ({ children, className = "", onClick, isOpen }, ref) => {
-    return (
-      <button
-        ref={ref}
-        type="button"
-        onClick={onClick}
-        className={`flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 ${className}`}
-      >
-        {children}
-        <ChevronDown className={`h-4 w-4 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-    );
+const SimpleSelectTrigger = React.forwardRef<
+  HTMLButtonElement, 
+  SimpleSelectTriggerProps & { 
+    onClick?: () => void; 
+    isOpen?: boolean;
+    selectedValue?: string;
   }
-);
+>(({ children, className = "", onClick, isOpen, selectedValue }, ref) => {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      className={`flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:bg-gray-50 ${className}`}
+    >
+      <span className={selectedValue ? "text-gray-900" : "text-gray-500"}>
+        {children}
+      </span>
+      <ChevronDown 
+        className={`h-4 w-4 opacity-50 transition-transform duration-200 ${
+          isOpen ? 'rotate-180' : ''
+        }`} 
+      />
+    </button>
+  );
+});
 
-const SimpleSelectContent = ({ children, className = "", isOpen, onItemClick }: SimpleSelectContentProps & { isOpen?: boolean; onItemClick?: (value: string) => void }) => {
-  console.log('🎯 SimpleSelectContent render, isOpen:', isOpen);
+SimpleSelectTrigger.displayName = "SimpleSelectTrigger";
+
+const SimpleSelectContent = ({ 
+  children, 
+  className = "", 
+  isOpen, 
+  onItemClick,
+  selectedValue 
+}: SimpleSelectContentProps & { 
+  isOpen?: boolean; 
+  onItemClick?: (value: string) => void;
+  selectedValue?: string;
+}) => {
   if (!isOpen) return null;
 
   return (
-    <div className={`absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white p-1 text-gray-900 shadow-lg top-full left-0 right-0 mt-1 ${className}`}>
+    <div className={`absolute z-50 min-w-full overflow-hidden rounded-md border bg-white py-1 shadow-lg top-full left-0 right-0 mt-1 ${className}`}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child) && child.type === SimpleSelectItem) {
-          console.log('🎯 Cloning SimpleSelectItem with onItemClick');
-          return React.cloneElement(child, { onItemClick });
+          return React.cloneElement(child, { 
+            onItemClick,
+            isSelected: selectedValue === child.props.value
+          });
         }
         return child;
       })}
@@ -118,9 +143,17 @@ const SimpleSelectContent = ({ children, className = "", isOpen, onItemClick }: 
   );
 };
 
-const SimpleSelectItem = ({ value, children, className = "", onItemClick }: SimpleSelectItemProps & { onItemClick?: (value: string) => void }) => {
+const SimpleSelectItem = ({ 
+  value, 
+  children, 
+  className = "", 
+  onItemClick,
+  isSelected 
+}: SimpleSelectItemProps & { 
+  onItemClick?: (value: string) => void;
+  isSelected?: boolean;
+}) => {
   const handleClick = () => {
-    console.log('🎯 SimpleSelectItem clicked:', value);
     if (onItemClick) {
       onItemClick(value);
     }
@@ -128,15 +161,22 @@ const SimpleSelectItem = ({ value, children, className = "", onItemClick }: Simp
 
   return (
     <div
-      className={`relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-gray-100 ${className}`}
+      className={`relative flex w-full cursor-pointer select-none items-center py-2 px-3 text-sm outline-none transition-colors hover:bg-gray-100 focus:bg-gray-100 ${
+        isSelected ? 'bg-gray-100 font-medium' : ''
+      } ${className}`}
       onClick={handleClick}
     >
       {children}
+      {isSelected && (
+        <span className="absolute right-3 flex h-3.5 w-3.5 items-center justify-center">
+          ✓
+        </span>
+      )}
     </div>
   );
 };
 
-const SimpleSelectValue = ({ placeholder }: SimpleSelectValueProps) => {
+const SimpleSelectValue = ({ placeholder = "Select an option" }: SimpleSelectValueProps) => {
   return <span>{placeholder}</span>;
 };
 
