@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, Save, Edit, Eye, FileText, TrendingUp } from "lucide-react";
+import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, Save, Edit, Eye, FileText, TrendingUp, Filter, X } from "lucide-react";
 import { Button } from "@/app/components/Button";
 import { Input } from "@/components/ui/input";
 import { UltraSimpleSelect } from "@/app/components/ui/ultra-simple-select";
@@ -43,19 +43,35 @@ const CONTRACT_TYPES = [
 ];
 
 export default function ContractsPage() {
-  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [allContracts, setAllContracts] = useState<Contract[]>([]);
+  const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // New state for enhanced features
+  // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("");
-  const [sortField, setSortField] = useState<keyof Contract | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [createdByFilter, setCreatedByFilter] = useState<string>("");
+  const [fundingSourceFilter, setFundingSourceFilter] = useState<string>("");
+  
+  // Date range filters
+  const [signingDateFrom, setSigningDateFrom] = useState<string>("");
+  const [signingDateTo, setSigningDateTo] = useState<string>("");
+  const [createdDateFrom, setCreatedDateFrom] = useState<string>("");
+  const [createdDateTo, setCreatedDateTo] = useState<string>("");
+  
+  // Value range filters
+  const [minValue, setMinValue] = useState<string>("");
+  const [maxValue, setMaxValue] = useState<string>("");
+  
+  // Display and pagination state
+  const [sortField, setSortField] = useState<keyof Contract | null>('updated_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -96,27 +112,17 @@ export default function ContractsPage() {
     checkAuth();
   }, []);
 
-  // Fetch contracts when authenticated or filters change
+  // Load all contracts once when authenticated
   useEffect(() => {
-    const fetchContracts = async () => {
+    const fetchAllContracts = async () => {
       if (!isAuthenticated) return;
       
       try {
         setLoading(true);
         setError(null);
 
-        const params = {
-          q: searchTerm || undefined,
-          status: statusFilter || undefined,
-          contract_type: typeFilter || undefined,
-          page: currentPage,
-          limit: itemsPerPage,
-          sort_by: sortField || 'created_at',
-          sort_dir: sortDirection
-        };
-
-        const response = await contractsApi.getContracts(params);
-        setContracts(response.data.contracts);
+        const response = await contractsApi.getContracts();
+        setAllContracts(response.data.contracts);
       } catch (err) {
         setError("Failed to fetch contracts. Please try again.");
         console.error("Error fetching contracts:", err);
@@ -125,8 +131,130 @@ export default function ContractsPage() {
       }
     };
 
-    fetchContracts();
-  }, [isAuthenticated, searchTerm, statusFilter, typeFilter, currentPage, itemsPerPage, sortField, sortDirection]);
+    fetchAllContracts();
+  }, [isAuthenticated]);
+
+  // Filter and sort contracts whenever filters or data change
+  useEffect(() => {
+    let filtered = [...allContracts];
+
+    // Apply search filter (across multiple fields)
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(contract => 
+        contract.project_name.toLowerCase().includes(searchLower) ||
+        contract.contract_number.toLowerCase().includes(searchLower) ||
+        contract.contract_type.toLowerCase().includes(searchLower) ||
+        (contract.package_name && contract.package_name.toLowerCase().includes(searchLower)) ||
+        (contract.external_reference && contract.external_reference.toLowerCase().includes(searchLower)) ||
+        contract.created_by.toLowerCase().includes(searchLower) ||
+        (contract.funding_source && contract.funding_source.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter) {
+      filtered = filtered.filter(contract => contract.status === statusFilter);
+    }
+
+    // Apply type filter
+    if (typeFilter) {
+      filtered = filtered.filter(contract => contract.contract_type === typeFilter);
+    }
+
+    // Apply created by filter
+    if (createdByFilter) {
+      filtered = filtered.filter(contract => 
+        contract.created_by.toLowerCase().includes(createdByFilter.toLowerCase())
+      );
+    }
+
+    // Apply funding source filter
+    if (fundingSourceFilter) {
+      filtered = filtered.filter(contract => 
+        contract.funding_source && 
+        contract.funding_source.toLowerCase().includes(fundingSourceFilter.toLowerCase())
+      );
+    }
+
+    // Apply signing date range filter
+    if (signingDateFrom || signingDateTo) {
+      filtered = filtered.filter(contract => {
+        if (!contract.signing_date) return false;
+        const signingDate = new Date(contract.signing_date);
+        const fromDate = signingDateFrom ? new Date(signingDateFrom) : null;
+        const toDate = signingDateTo ? new Date(signingDateTo) : null;
+        
+        if (fromDate && signingDate < fromDate) return false;
+        if (toDate && signingDate > toDate) return false;
+        return true;
+      });
+    }
+
+    // Apply created date range filter
+    if (createdDateFrom || createdDateTo) {
+      filtered = filtered.filter(contract => {
+        const createdDate = new Date(contract.created_at);
+        const fromDate = createdDateFrom ? new Date(createdDateFrom) : null;
+        const toDate = createdDateTo ? new Date(createdDateTo) : null;
+        
+        if (fromDate && createdDate < fromDate) return false;
+        if (toDate && createdDate > toDate) return false;
+        return true;
+      });
+    }
+
+    // Apply value range filter
+    if (minValue || maxValue) {
+      filtered = filtered.filter(contract => {
+        const value = contract.total_value;
+        const min = minValue ? parseFloat(minValue) : null;
+        const max = maxValue ? parseFloat(maxValue) : null;
+        
+        if (min !== null && value < min) return false;
+        if (max !== null && value > max) return false;
+        return true;
+      });
+    }
+
+    // Apply sorting
+    if (sortField) {
+      filtered.sort((a, b) => {
+        let aValue = a[sortField];
+        let bValue = b[sortField];
+
+        // Handle null/undefined values
+        if (aValue === null || aValue === undefined) aValue = '';
+        if (bValue === null || bValue === undefined) bValue = '';
+
+        // Convert to strings for comparison if needed
+        if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+        if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    setFilteredContracts(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [
+    allContracts, 
+    searchTerm, 
+    statusFilter, 
+    typeFilter, 
+    createdByFilter, 
+    fundingSourceFilter,
+    signingDateFrom, 
+    signingDateTo, 
+    createdDateFrom, 
+    createdDateTo,
+    minValue, 
+    maxValue, 
+    sortField, 
+    sortDirection
+  ]);
 
   // Handle logout
   const handleLogout = () => {
@@ -157,21 +285,7 @@ export default function ContractsPage() {
     }
   };
 
-  // Handle create new contract
-  const handleCreateNew = () => {
-    setFormData({
-      project_name: '',
-      package_name: '',
-      external_reference: '',
-      contract_type: '',
-      signing_place: '',
-      signing_date: '',
-      total_value: 0,
-      funding_source: ''
-    });
-    setFormErrors({});
-    setIsCreateDialogOpen(true);
-  };
+
 
   // Handle update contract
   const handleUpdate = (contract: Contract) => {
@@ -213,18 +327,8 @@ export default function ContractsPage() {
   // Refetch contracts helper
   const refetchContracts = async () => {
     try {
-      const params = {
-        q: searchTerm || undefined,
-        status: statusFilter || undefined,
-        contract_type: typeFilter || undefined,
-        page: currentPage,
-        limit: itemsPerPage,
-        sort_by: sortField || 'created_at',
-        sort_dir: sortDirection
-      };
-
-      const response = await contractsApi.getContracts(params);
-      setContracts(response.data.contracts);
+      const response = await contractsApi.getContracts();
+      setAllContracts(response.data.contracts);
     } catch (err) {
       console.error("Error fetching contracts:", err);
       setError("Failed to fetch contracts. Please try again.");
@@ -294,8 +398,53 @@ export default function ContractsPage() {
     }
   };
 
-  // Pagination
-  const totalPages = Math.ceil(contracts.length / itemsPerPage);
+  // Get unique values for filters
+  const getUniqueCreatedBy = (): string[] => {
+    const unique = [...new Set(allContracts.map(c => c.created_by))];
+    return unique.filter(Boolean).sort();
+  };
+
+  const getUniqueFundingSources = (): string[] => {
+    const unique = [...new Set(allContracts.map(c => c.funding_source).filter(Boolean) as string[])];
+    return unique.sort();
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("");
+    setTypeFilter("");
+    setCreatedByFilter("");
+    setFundingSourceFilter("");
+    setSigningDateFrom("");
+    setSigningDateTo("");
+    setCreatedDateFrom("");
+    setCreatedDateTo("");
+    setMinValue("");
+    setMaxValue("");
+  };
+
+  // Count active filters
+  const getActiveFilterCount = (): number => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (statusFilter) count++;
+    if (typeFilter) count++;
+    if (createdByFilter) count++;
+    if (fundingSourceFilter) count++;
+    if (signingDateFrom || signingDateTo) count++;
+    if (createdDateFrom || createdDateTo) count++;
+    if (minValue || maxValue) count++;
+    return count;
+  };
+
+  const activeFilterCount = getActiveFilterCount();
+
+  // Pagination - get current page data from filtered contracts
+  const totalPages = Math.ceil(filteredContracts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPageContracts = filteredContracts.slice(startIndex, endIndex);
 
   if (!isAuthenticated) {
     return (
@@ -333,52 +482,180 @@ export default function ContractsPage() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Search contracts..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+        {/* Enhanced Filters */}
+        <div className="mb-6 bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <h3 className="text-lg font-medium text-gray-900">Filters</h3>
+              {activeFilterCount > 0 && (
+                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                  {activeFilterCount} active
+                </span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="secondary"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="text-sm"
+              >
+                <Filter className="h-4 w-4 mr-1" />
+                {showAdvancedFilters ? 'Basic' : 'Advanced'}
+              </Button>
+              <Button
+                variant="secondary" 
+                onClick={clearAllFilters}
+                className="text-sm"
+                disabled={activeFilterCount === 0}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear All
+              </Button>
+              <span className="text-sm text-gray-500">
+                {filteredContracts.length} of {allContracts.length} contracts
+              </span>
+            </div>
+          </div>
+
+          {/* Row 1: Basic Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search all fields..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <UltraSimpleSelect
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+              options={[
+                { value: '', label: 'All Statuses' },
+                ...CONTRACT_STATUSES.map(status => ({
+                  value: status,
+                  label: status.replace(/_/g, ' ')
+                }))
+              ]}
+            />
+
+            <UltraSimpleSelect
+              value={typeFilter}
+              onValueChange={setTypeFilter}
+              options={[
+                { value: '', label: 'All Types' },
+                ...CONTRACT_TYPES.map(type => ({
+                  value: type,
+                  label: type
+                }))
+              ]}
+            />
+
+            <UltraSimpleSelect
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => setItemsPerPage(Number(value))}
+              options={[
+                { value: '10', label: '10 per page' },
+                { value: '25', label: '25 per page' },
+                { value: '50', label: '50 per page' }
+              ]}
             />
           </div>
-          
-          <UltraSimpleSelect
-            value={statusFilter}
-            onValueChange={setStatusFilter}
-            options={[
-              { value: '', label: 'All Statuses' },
-              ...CONTRACT_STATUSES.map(status => ({
-                value: status,
-                label: status.replace(/_/g, ' ')
-              }))
-            ]}
-          />
 
-          <UltraSimpleSelect
-            value={typeFilter}
-            onValueChange={setTypeFilter}
-            options={[
-              { value: '', label: 'All Types' },
-              ...CONTRACT_TYPES.map(type => ({
-                value: type,
-                label: type
-              }))
-            ]}
-          />
+          {/* Advanced Filters - Collapsible */}
+          {showAdvancedFilters && (
+            <>
+              {/* Row 2: Advanced Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <UltraSimpleSelect
+                  value={createdByFilter}
+                  onValueChange={setCreatedByFilter}
+                  options={[
+                    { value: '', label: 'All Creators' },
+                    ...getUniqueCreatedBy().map(creator => ({
+                      value: creator,
+                      label: creator
+                    }))
+                  ]}
+                />
 
-          <UltraSimpleSelect
-            value={itemsPerPage.toString()}
-            onValueChange={(value) => setItemsPerPage(Number(value))}
-            options={[
-              { value: '10', label: '10 per page' },
-              { value: '25', label: '25 per page' },
-              { value: '50', label: '50 per page' }
-            ]}
-          />
+                <UltraSimpleSelect
+                  value={fundingSourceFilter}
+                  onValueChange={setFundingSourceFilter}
+                  options={[
+                    { value: '', label: 'All Funding Sources' },
+                    ...getUniqueFundingSources().map(source => ({
+                      value: source,
+                      label: source
+                    }))
+                  ]}
+                />
+
+                <div className="flex space-x-2">
+                  <Input
+                    type="number"
+                    placeholder="Min Value"
+                    value={minValue}
+                    onChange={(e) => setMinValue(e.target.value)}
+                    className="w-1/2"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Max Value"
+                    value={maxValue}
+                    onChange={(e) => setMaxValue(e.target.value)}
+                    className="w-1/2"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Date Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Signing Date Range</label>
+                  <div className="flex space-x-2">
+                    <Input
+                      type="date"
+                      value={signingDateFrom}
+                      onChange={(e) => setSigningDateFrom(e.target.value)}
+                      className="w-1/2"
+                      placeholder="From"
+                    />
+                    <Input
+                      type="date"
+                      value={signingDateTo}
+                      onChange={(e) => setSigningDateTo(e.target.value)}
+                      className="w-1/2"
+                      placeholder="To"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Created Date Range</label>
+                  <div className="flex space-x-2">
+                    <Input
+                      type="date"
+                      value={createdDateFrom}
+                      onChange={(e) => setCreatedDateFrom(e.target.value)}
+                      className="w-1/2"
+                      placeholder="From"
+                    />
+                    <Input
+                      type="date"
+                      value={createdDateTo}
+                      onChange={(e) => setCreatedDateTo(e.target.value)}
+                      className="w-1/2"
+                      placeholder="To"
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Table */}
@@ -479,18 +756,25 @@ export default function ContractsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : contracts.length === 0 ? (
+              ) : filteredContracts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
                     <div className="text-gray-500">
                       <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-lg font-medium">No contracts found</p>
-                      <p className="text-sm">Get started by creating your first contract</p>
+                      <p className="text-lg font-medium">
+                        {allContracts.length === 0 ? "No contracts found" : "No contracts match your filters"}
+                      </p>
+                      <p className="text-sm">
+                        {allContracts.length === 0 
+                          ? "Get started by creating your first contract" 
+                          : "Try adjusting your search criteria"
+                        }
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                contracts.map((contract) => (
+                currentPageContracts.map((contract) => (
                   <TableRow
                     key={contract.id}
                     className="cursor-pointer hover:bg-gray-50 border-b border-gray-100"
@@ -538,10 +822,13 @@ export default function ContractsPage() {
         </div>
 
         {/* Pagination */}
-        {!loading && contracts.length > 0 && (
+        {!loading && filteredContracts.length > 0 && (
           <div className="flex items-center justify-between mt-6">
             <div className="text-sm text-gray-600">
-              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, contracts.length)} of {contracts.length} contracts
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredContracts.length)} of {filteredContracts.length} contracts
+              {filteredContracts.length !== allContracts.length && (
+                <span className="text-gray-500"> (filtered from {allContracts.length} total)</span>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <Button

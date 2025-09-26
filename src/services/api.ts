@@ -216,27 +216,9 @@ export const clausesApi = {
 
 // Contracts API
 export const contractsApi = {
-  getContracts: async (params?: {
-    q?: string;
-    status?: string;
-    contract_type?: string;
-    page?: number;
-    limit?: number;
-    sort_by?: string;
-    sort_dir?: 'asc' | 'desc';
-  }): Promise<{ data: ContractsResponse }> => {
-    const queryParams = new URLSearchParams();
-    if (params?.q) queryParams.append('q', params.q);
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.contract_type) queryParams.append('contract_type', params.contract_type);
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
-    if (params?.sort_dir) queryParams.append('sort_dir', params.sort_dir);
-
-    const url = `/api/contracts/`;
-    const response = await api.get(url);
-    console.log(response.data)
+  getContracts: async (): Promise<{ data: ContractsResponse }> => {
+    const response = await api.get('/api/contracts/');
+    console.log('All contracts loaded:', response.data);
     return response.data as { data: ContractsResponse };
   },
 
@@ -245,7 +227,7 @@ export const contractsApi = {
     return response.data as { data: Contract };
   },
 
-  createContract: async (data: Partial<ContractTemplate>): Promise<{ data: ContractTemplate }> => {
+  createContract: async (data: CreateContractRequest): Promise<{ data: ContractTemplate }> => {
     console.log('🚀 API: Creating contract with data:', data);
     const response = await api.post('/api/contracts/', data);
     return response.data as { data: ContractTemplate };
