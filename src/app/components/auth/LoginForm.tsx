@@ -23,7 +23,6 @@ export function LoginForm() {
     setError(null);
     setLoading(true);
 
-    // 1. Definisikan tipe data yang lebih lengkap untuk User dan Response
     interface User {
       id: string;
       email: string;
@@ -36,7 +35,7 @@ export function LoginForm() {
       message: string;
       data: {
         token: string;
-        user: User; // Tambahkan objek user di sini
+        user: User;
       };
     }
 
