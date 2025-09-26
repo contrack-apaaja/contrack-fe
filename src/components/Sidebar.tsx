@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard, FileText, Clipboard, LogOut, User, Menu, X } from "lucide-react"
@@ -17,12 +18,24 @@ const navigation = [
 ]
 
 const useAuth = () => {
-  const userData = authUtils.getUserData();
+  const [user, setUser] = useState<{ email: string; role: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      const userData = authUtils.getUserData();
+      setUser(userData ? {
+        email: userData.email,
+        role: userData.role
+      } : null);
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
-    user: userData ? {
-      email: userData.email,
-      role: userData.role
-    } : null,
+    user,
+    isLoading,
     logout: () => authUtils.logout()
   };
 }
@@ -30,7 +43,7 @@ const useAuth = () => {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user, isLoading, logout } = useAuth()
   const { isCollapsed, toggleSidebar } = useSidebar()
 
   const handleLogout = async () => {
@@ -78,8 +91,17 @@ export function Sidebar() {
             <User className="h-4 w-4 text-sidebar-primary-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email}</p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">{user?.role}</p>
+            {isLoading ? (
+              <>
+                <div className="h-4 bg-sidebar-accent rounded animate-pulse mb-1"></div>
+                <div className="h-3 bg-sidebar-accent rounded animate-pulse w-2/3"></div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email || 'No user'}</p>
+                <p className="text-xs text-sidebar-foreground/60 truncate">{user?.role || 'No role'}</p>
+              </>
+            )}
           </div>
         </div>
         <Button

@@ -179,7 +179,7 @@ export interface DashboardResponse {
 }
 
 // Contracts types
-export interface Contract {
+export interface ContractDashboard {
   id: number;
   project_name: string;
   contract_type: string;
@@ -193,7 +193,7 @@ export interface Contract {
 export interface ContractsResponse {
   status: string;
   message: string;
-  data: Contract[];
+  data: ContractDashboard[];
 }
 
 // Contract Approval types
@@ -317,12 +317,12 @@ export const clausesApi = {
 export const dashboardApi = {
   getDashboardData: async (): Promise<DashboardResponse> => {
     const response = await api.get('/api/dashboard/status-counts');
-    return response.data;
+    return response.data as DashboardResponse;
   },
 
   getContracts: async (): Promise<ContractsResponse> => {
     const response = await api.get('/api/dashboard/contracts');
-    return response.data;
+    return response.data as ContractsResponse;
   }
 };
 
@@ -332,13 +332,13 @@ export const contractApprovalApi = {
     const response = await api.post('/api/contracts/approve', {
       contract_id: contractId
     });
-    return response.data;
+    return response.data as ContractApprovalResponse;
   }
 };
 
 // Contracts API
 export const contractsApi = {
-  getContracts: async (): Promise<{ data: ContractsResponse }> => {
+  getContracts: async (): Promise<{ data: { contracts: Contract[]; total: number; page: number; limit: number; pages: number } }> => {
     const response = await api.get('/api/contracts/');
 
     // Handle different possible response structures
@@ -346,10 +346,10 @@ export const contractsApi = {
 
     if (responseData && typeof responseData === 'object' && 'data' in responseData) {
       // If response has a nested data structure
-      return responseData as { data: ContractsResponse };
+      return responseData as { data: { contracts: Contract[]; total: number; page: number; limit: number; pages: number } };
     } else if (responseData && typeof responseData === 'object' && 'contracts' in responseData && Array.isArray((responseData as Record<string, unknown>).contracts)) {
       // If response.data directly contains contracts
-      return { data: responseData as ContractsResponse };
+      return { data: responseData as { contracts: Contract[]; total: number; page: number; limit: number; pages: number } };
     } else if (Array.isArray(responseData)) {
       // If response.data is directly an array of contracts
       return {
@@ -463,6 +463,95 @@ export const aiApi = {
       console.error('Error analyzing clauses:', error);
       throw error;
     }
+  }
+};
+
+// AI Analysis API
+export const aiAnalysisApi = {
+  analyzeContract: async (contractId: number): Promise<{
+    status: string;
+    data: {
+      contract_id: number;
+      overall_risk_level: string;
+      overall_risk_score: number;
+      contract_summary: string;
+      clause_analyses: Array<{
+        clause_id: number;
+        risk_level: string;
+        risk_score: number;
+        analysis_summary: string;
+        identified_risks: string[];
+        recommendations: string[];
+        legal_implications: string;
+        compliance_notes: string;
+      }>;
+      key_risks: string[];
+      recommendations: string[];
+    };
+  }> => {
+    const response = await api.post('/api/ai/analyze-contract', {
+      contract_id: contractId
+    });
+    return response.data as {
+      status: string;
+      data: {
+        contract_id: number;
+        overall_risk_level: string;
+        overall_risk_score: number;
+        contract_summary: string;
+        clause_analyses: Array<{
+          clause_id: number;
+          risk_level: string;
+          risk_score: number;
+          analysis_summary: string;
+          identified_risks: string[];
+          recommendations: string[];
+          legal_implications: string;
+          compliance_notes: string;
+        }>;
+        key_risks: string[];
+        recommendations: string[];
+      };
+    };
+  },
+
+  saveAnalysis: async (contractId: number, analysisResult: {
+    contract_id: number;
+    clause_analyses: Array<{
+      clause_id: number;
+      risk_level: string;
+      risk_score: number;
+      analysis_summary: string;
+      identified_risks: string[];
+      recommendations: string[];
+      legal_implications: string;
+      compliance_notes: string;
+    }>;
+    overall_risk_level: string;
+    overall_risk_score: number;
+    contract_summary: string;
+    key_risks: string[];
+    recommendations: string[];
+  }): Promise<{
+    status: string;
+    data: {
+      contract_id: number;
+      status: string;
+      message: string;
+    };
+  }> => {
+    const response = await api.post('/api/contracts/save-analysis', {
+      contract_id: contractId,
+      analysis_result: analysisResult
+    });
+    return response.data as {
+      status: string;
+      data: {
+        contract_id: number;
+        status: string;
+        message: string;
+      };
+    };
   }
 };
 

@@ -455,6 +455,12 @@ export default function ContractsPage() {
     window.location.href = `/contracts/${contract.id}/edit`;
   };
 
+  // Handle AI Analysis - redirects to AI analysis page
+  const handleAIAnalysis = (contract: Contract) => {
+    // Redirect to AI analysis page
+    window.location.href = `/contracts/${contract.id}/ai-analysis`;
+  };
+
   // Format currency
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -986,6 +992,17 @@ export default function ContractsPage() {
                           className="h-8 w-8 p-0"
                         >
                           <Info className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAIAnalysis(contract);
+                          }}
+                          className="h-8 w-8 p-0"
+                          title="AI Analysis"
+                        >
+                          <TrendingUp className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
