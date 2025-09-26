@@ -147,6 +147,55 @@ export interface ClausesResponse {
   pagination: PaginationInfo;
 }
 
+// Dashboard types
+export interface StatusCount {
+  status: string;
+  status_display: string;
+  count: number;
+}
+
+export interface ProjectValueDistribution {
+  project_name: string;
+  total_value: number;
+}
+
+export interface ContractTypeDistribution {
+  contract_type: string;
+  count: number;
+}
+
+export interface DashboardData {
+  status_counts: StatusCount[];
+  project_value_distribution: ProjectValueDistribution[];
+  contract_type_distribution: ContractTypeDistribution[];
+  total_contracts: number;
+  total_value: number;
+}
+
+export interface DashboardResponse {
+  status: string;
+  message: string;
+  data: DashboardData;
+}
+
+// Contracts types
+export interface Contract {
+  id: number;
+  project_name: string;
+  contract_type: string;
+  status: string;
+  status_display: string;
+  total_value: number;
+  signing_date: string;
+  created_at: string;
+}
+
+export interface ContractsResponse {
+  status: string;
+  message: string;
+  data: Contract[];
+}
+
 
 // Auth utilities
 export const authUtils = {
@@ -211,6 +260,19 @@ export const clausesApi = {
   
   deleteClause: async (id: string): Promise<void> => {
     await api.delete(`/api/clauses/${id}`);
+  }
+};
+
+// Dashboard API
+export const dashboardApi = {
+  getDashboardData: async (): Promise<DashboardResponse> => {
+    const response = await api.get('/api/dashboard/status-counts');
+    return response.data;
+  },
+  
+  getContracts: async (): Promise<ContractsResponse> => {
+    const response = await api.get('/api/dashboard/contracts');
+    return response.data;
   }
 };
 
