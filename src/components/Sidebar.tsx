@@ -14,13 +14,16 @@ const navigation = [
   { name: "Clause", href: "/clauses", icon: Clipboard },
 ]
 
-const useAuth = () => ({
-  user: {
-    name: "John Doe",
-    email: "john.doe@example.com",
-  },
-  logout: () => authUtils.logout(),
-})
+const useAuth = () => {
+  const userData = authUtils.getUserData();
+  return {
+    user: userData ? {
+      email: userData.email,
+      role: userData.role
+    } : null,
+    logout: () => authUtils.logout()
+  };
+}
 
 
 export function Sidebar() {
@@ -66,8 +69,8 @@ export function Sidebar() {
             <User className="h-4 w-4 text-sidebar-primary-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name}</p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email}</p>
+            <p className="text-xs text-sidebar-foreground/60 truncate">{user?.role}</p>
           </div>
         </div>
         <Button

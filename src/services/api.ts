@@ -196,6 +196,22 @@ export interface ContractsResponse {
   data: Contract[];
 }
 
+export interface User {
+  id: string;
+  email: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoginResponse {
+  status: string;
+  message: string;
+  data: {
+    token: string;
+    user: User;
+  }
+}
 
 // Auth utilities
 export const authUtils = {
@@ -203,20 +219,32 @@ export const authUtils = {
     if (typeof window === 'undefined') return false;
     return !!localStorage.getItem('token');
   },
-  
+
   getToken: (): string | null => {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('token');
   },
-  
+
   setToken: (token: string): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem('token', token);
   },
-  
+
+  setUserData: (user: User): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('user', JSON.stringify(user));
+  },
+
+  getUserData: (): User | null => {
+    if (typeof window === 'undefined') return null;
+    const userData = localStorage.getItem('user');
+    return userData ? JSON.parse(userData) : null;
+  },
+
   logout: (): void => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     window.location.href = '/login';
   }
 };
@@ -237,27 +265,27 @@ export const clausesApi = {
     console.log(response.data);
     return response.data as { data: ClausesResponse };
   },
-  
+
   getClause: async (id: string): Promise<{ data: ClauseTemplate }> => {
     const response = await api.get(`/api/clauses/${id}`);
     return response.data as { data: ClauseTemplate };
   },
-  
+
   createClause: async (data: Partial<ClauseTemplate>): Promise<{ data: ClauseTemplate }> => {
     console.log('🚀 API: Creating clause with data:', data);
     console.log('🚀 API: Data type:', typeof data);
     console.log('🚀 API: Data keys:', Object.keys(data));
-    
+
     const response = await api.post('/api/clauses/', data);
     console.log('🚀 API: Create response:', response);
     return response.data as { data: ClauseTemplate };
   },
-  
+
   updateClause: async (id: string, data: Partial<ClauseTemplate>): Promise<{ data: ClauseTemplate }> => {
     const response = await api.put(`/api/clauses/${id}`, data);
     return response.data as { data: ClauseTemplate };
   },
-  
+
   deleteClause: async (id: string): Promise<void> => {
     await api.delete(`/api/clauses/${id}`);
   }
@@ -269,7 +297,7 @@ export const dashboardApi = {
     const response = await api.get('/api/dashboard/status-counts');
     return response.data;
   },
-  
+
   getContracts: async (): Promise<ContractsResponse> => {
     const response = await api.get('/api/dashboard/contracts');
     return response.data;
@@ -280,10 +308,10 @@ export const dashboardApi = {
 export const contractsApi = {
   getContracts: async (): Promise<{ data: ContractsResponse }> => {
     const response = await api.get('/api/contracts/');
-    
+
     // Handle different possible response structures
     const responseData = response.data;
-    
+
     if (responseData && typeof responseData === 'object' && 'data' in responseData) {
       // If response has a nested data structure
       return responseData as { data: ContractsResponse };
@@ -292,14 +320,14 @@ export const contractsApi = {
       return { data: responseData as ContractsResponse };
     } else if (Array.isArray(responseData)) {
       // If response.data is directly an array of contracts
-      return { 
-        data: { 
-          contracts: responseData as Contract[], 
+      return {
+        data: {
+          contracts: responseData as Contract[],
           total: responseData.length,
           page: 1,
           limit: responseData.length,
           pages: 1
-        } 
+        }
       };
     } else {
       // Return empty contracts if unexpected structure
