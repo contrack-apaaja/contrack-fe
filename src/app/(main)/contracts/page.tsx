@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, Save, Edit, Eye, FileText, TrendingUp, Filter, X, Download, Calendar, DollarSign, Users, FileCheck, AlertTriangle, Shield, Clock, Building, MapPin, User, CheckCircle, Activity, History } from "lucide-react";
+import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, Save, Edit, Eye, FileText, TrendingUp, Filter, X, Download, Calendar, DollarSign, Users, FileCheck, AlertTriangle, Shield, Clock, Building, MapPin, User, CheckCircle, Activity, History, Upload } from "lucide-react";
 import { Button } from "@/app/components/Button";
 import { Input } from "@/components/ui/input";
 import { UltraSimpleSelect } from "@/app/components/ui/ultra-simple-select";
@@ -77,6 +77,7 @@ export default function ContractsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'stakeholders' | 'clauses' | 'analysis' | 'audit'>('overview');
+  const [isPublishingDraft, setIsPublishingDraft] = useState(false);
   
   // Create/Update dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -453,6 +454,43 @@ export default function ContractsPage() {
     
     // Redirect to edit page
     window.location.href = `/contracts/${contract.id}/edit`;
+  };
+
+  // Handle publish draft - changes contract status from DRAFT to PENDING_SIGNATURE
+  const handlePublishDraft = async () => {
+    if (!selectedContract) return;
+    
+    setIsPublishingDraft(true);
+    try {
+      await contractsApi.changeContractStatus(selectedContract.id, {
+        status: 'PENDING_LEGAL_REVIEW',
+        change_reason: 'Ready for approvement',
+        comments: 'All documents are complete and ready for management approvement'
+      });
+      
+      // Update the contract status in the local state
+      setAllContracts(prev => 
+        prev.map(contract => 
+          contract.id === selectedContract.id 
+            ? { ...contract, status: 'PENDING_LEGAL_REVIEW' as const }
+            : contract
+        )
+      );
+      
+      // Update the selected contract
+      setSelectedContract(prev => 
+        prev ? { ...prev, status: 'PENDING_LEGAL_REVIEW' as const } : null
+      );
+      
+      // Show success message
+      alert('Contract published successfully! Status changed to PENDING_LEGAL_REVIEW.');
+      
+    } catch (error) {
+      console.error('Error publishing draft:', error);
+      alert('Failed to publish contract. Please try again.');
+    } finally {
+      setIsPublishingDraft(false);
+    }
   };
 
   // Format currency
@@ -1651,10 +1689,33 @@ export default function ContractsPage() {
             {/* Audit Trail Tab */}
             {activeTab === 'audit' && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold flex items-center">
-            <History className="h-5 w-5 mr-2 text-gray-600" />
-            Audit Trail
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold flex items-center">
+                    <History className="h-5 w-5 mr-2 text-gray-600" />
+                    Audit Trail
+                  </h3>
+                  
+                  {/* Publish Draft Button - Only show for DRAFT status */}
+                  {selectedContract.status === 'DRAFT' && (
+                    <Button
+                      onClick={handlePublishDraft}
+                      disabled={isPublishingDraft}
+                      className="!bg-green-600 !hover:bg-green-700 !text-white !border-green-600"
+                    >
+                      {isPublishingDraft ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Publishing...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Publish Draft
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
                 
                 <div className="space-y-6">
             {generateAuditTrail(selectedContract).map((entry) => (
