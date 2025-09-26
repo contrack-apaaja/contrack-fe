@@ -22,18 +22,36 @@ export function LoginForm() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    interface User {
+      id: string;
+      email: string;
+      created_at: string;
+      updated_at: string;
+    }
+
+    interface LoginResponse {
+      status: string;
+      message: string;
+      data: {
+        token: string;
+        user: User;
+      };
+    }
+
     try {
       const response = await api.post('/api/auth/login', { email, password });
-      const data = response.data as {
-        status: string;
-        message: string;
-        data: { token: string; };
-      };
-      if (response.status !== 200 || data.status !== 'success' || !data.data.token) {
-        throw new Error(data.message || 'Email atau kata sandi salah.');
+      const data = response.data as LoginResponse;
+
+      if (response.status !== 200 || data.status !== 'success' || !data.data.token || !data.data.user) {
+        throw new Error(data.message || 'Respons dari server tidak valid.');
       }
+
       console.log('Login successful');
+
       localStorage.setItem('token', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+
       router.push('/dashboard');
     } catch (error) {
       console.error('Login error:', error);

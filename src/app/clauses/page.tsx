@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/app/components/ui/table";
 import { clausesApi, ClauseTemplate, PaginationInfo, authUtils } from "@/services/api";
+import Sidebar from '../../components/Sidebar';
 
 export default function ClausesPage() {
   const [clauses, setClauses] = useState<ClauseTemplate[]>([]);
@@ -35,31 +36,31 @@ export default function ClausesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   // New state for enhanced features
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<keyof ClauseTemplate | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null);
-  
+
 
   // Check authentication on component mount
   useEffect(() => {
     const checkAuth = () => {
       const authenticated = authUtils.isAuthenticated();
       setIsAuthenticated(authenticated);
-      
+
       if (!authenticated) {
         window.location.href = '/login';
         return;
       }
     };
-    
+
     checkAuth();
   }, []);
 
@@ -90,7 +91,7 @@ export default function ClausesPage() {
 
   // Filter and sort clauses
   const filteredAndSortedClauses = useMemo(() => {
-    let filtered = clauses.filter(clause =>
+    const filtered = clauses.filter(clause =>
       clause.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -98,28 +99,28 @@ export default function ClausesPage() {
       filtered.sort((a, b) => {
         const aValue = a[sortField];
         const bValue = b[sortField];
-        
+
         if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortDirection === 'asc' 
+          return sortDirection === 'asc'
             ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue);
         }
-        
+
         if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
-          return sortDirection === 'asc' 
+          return sortDirection === 'asc'
             ? (aValue === bValue ? 0 : aValue ? 1 : -1)
             : (aValue === bValue ? 0 : aValue ? -1 : 1);
         }
-        
-        if (typeof aValue === 'string' && typeof bValue === 'string' && 
+
+        if (typeof aValue === 'string' && typeof bValue === 'string' &&
             (sortField === 'updated_at' || sortField === 'created_at')) {
           const aDate = new Date(aValue);
           const bDate = new Date(bValue);
-          return sortDirection === 'asc' 
+          return sortDirection === 'asc'
             ? aDate.getTime() - bDate.getTime()
             : bDate.getTime() - aDate.getTime();
         }
-        
+
         return 0;
       });
     }
@@ -203,7 +204,9 @@ export default function ClausesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="flex min-h-screen bg-white">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto">
       <div className="container mx-auto py-8 px-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -213,8 +216,8 @@ export default function ClausesPage() {
               <Plus className="h-4 w-4 mr-2" />
               New Clause
             </Button>
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               onClick={handleLogout}
               className="border-primary text-primary hover:bg-primary/10"
             >
@@ -251,54 +254,54 @@ export default function ClausesPage() {
            <Table>
              <TableHeader>
                <TableRow className="border-b border-gray-300">
-                 <TableHead 
+                 <TableHead
                    className="font-semibold text-black cursor-pointer hover:bg-gray-50 select-none"
                    onClick={() => handleSort('title')}
                  >
                    <div className="flex items-center space-x-1">
                      <span>Clause Name</span>
                      {sortField === 'title' && (
-                       sortDirection === 'asc' ? 
-                         <ChevronUp className="h-4 w-4" /> : 
+                       sortDirection === 'asc' ?
+                         <ChevronUp className="h-4 w-4" /> :
                          <ChevronDown className="h-4 w-4" />
                      )}
                    </div>
                  </TableHead>
-                 <TableHead 
+                 <TableHead
                    className="font-semibold text-black cursor-pointer hover:bg-gray-50 select-none"
                    onClick={() => handleSort('type')}
                  >
                    <div className="flex items-center space-x-1">
                      <span>Type</span>
                      {sortField === 'type' && (
-                       sortDirection === 'asc' ? 
-                         <ChevronUp className="h-4 w-4" /> : 
+                       sortDirection === 'asc' ?
+                         <ChevronUp className="h-4 w-4" /> :
                          <ChevronDown className="h-4 w-4" />
                      )}
                    </div>
                  </TableHead>
-                 <TableHead 
+                 <TableHead
                    className="font-semibold text-black cursor-pointer hover:bg-gray-50 select-none"
                    onClick={() => handleSort('is_active')}
                  >
                    <div className="flex items-center space-x-1">
                      <span>Status</span>
                      {sortField === 'is_active' && (
-                       sortDirection === 'asc' ? 
-                         <ChevronUp className="h-4 w-4" /> : 
+                       sortDirection === 'asc' ?
+                         <ChevronUp className="h-4 w-4" /> :
                          <ChevronDown className="h-4 w-4" />
                      )}
                    </div>
                  </TableHead>
-                 <TableHead 
+                 <TableHead
                    className="font-semibold text-black cursor-pointer hover:bg-gray-50 select-none"
                    onClick={() => handleSort('updated_at')}
                  >
                    <div className="flex items-center space-x-1">
                      <span>Last Modified</span>
                      {sortField === 'updated_at' && (
-                       sortDirection === 'asc' ? 
-                         <ChevronUp className="h-4 w-4" /> : 
+                       sortDirection === 'asc' ?
+                         <ChevronUp className="h-4 w-4" /> :
                          <ChevronDown className="h-4 w-4" />
                      )}
                    </div>
@@ -396,7 +399,7 @@ export default function ClausesPage() {
                  <ChevronLeft className="h-4 w-4" />
                  <span>Previous</span>
                </Button>
-               
+
                {/* Page numbers */}
                <div className="flex items-center space-x-1">
                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -410,7 +413,7 @@ export default function ClausesPage() {
                    } else {
                      pageNum = currentPage - 2 + i;
                    }
-                   
+
                    return (
                      <Button
                        key={pageNum}
@@ -459,7 +462,7 @@ export default function ClausesPage() {
                  </Button>
                </div>
              </DialogHeader>
-             
+
              {selectedClause && (
                <div className="p-6 space-y-6">
                  {/* Basic Information */}
@@ -486,7 +489,7 @@ export default function ClausesPage() {
                        </span>
                      </div>
                    </div>
-                   
+
                    <div className="space-y-4">
                      <div>
                        <label className="text-sm font-medium text-gray-500">Created At</label>
@@ -504,12 +507,12 @@ export default function ClausesPage() {
                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Clause Content</h3>
                    <div className="bg-gray-50 rounded-lg p-4">
                      <p className="text-sm text-gray-700 leading-relaxed">
-                       This is where the detailed clause content would be displayed. 
+                       This is where the detailed clause content would be displayed.
                        The actual content would come from the backend API response.
                        For now, this is a placeholder to show the structure of the dialog.
                      </p>
                      <p className="text-sm text-gray-700 leading-relaxed mt-3">
-                       In a real implementation, you would fetch the full clause content 
+                       In a real implementation, you would fetch the full clause content
                        from the API using the clause ID: <code className="bg-gray-200 px-1 rounded">{selectedClause.id}</code>
                      </p>
                    </div>
@@ -548,6 +551,7 @@ export default function ClausesPage() {
          </Dialog>
 
       </div>
+      </main>
     </div>
   );
 }
