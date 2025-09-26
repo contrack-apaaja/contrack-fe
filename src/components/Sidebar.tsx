@@ -11,7 +11,6 @@ import { authUtils } from "@/services/api";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Contract", href: "/contracts", icon: FileText },
-  { name: "Clause New", href: "/clause", icon: Clipboard },
   { name: "Clause", href: "/clauses", icon: Clipboard },
 ]
 

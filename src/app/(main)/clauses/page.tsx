@@ -1,129 +1,133 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, X, Save, Edit } from "lucide-react";
-import { Button } from "@/app/components/Button";
+import React, { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UltraSimpleSelect } from "@/app/components/ui/ultra-simple-select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/app/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/app/components/ui/table";
-import { clausesApi, ClauseTemplate, authUtils } from "@/services/api";
+import { Info, ChevronLeft, ChevronRight, Search, Plus, ChevronUp, ChevronDown } from "lucide-react";
+import { clausesApi } from "@/services/api";
+import { ClauseDetailModal } from "@/app/components/clauses/ClauseDetailModal";
+import { CreateClauseModal } from "@/app/components/clauses/CreateClauseModal";
 
+// =========== INTERFACES (Definisi Tipe Data) ===========
+interface ClauseTemplate {
+  id: number;
+  clause_code: string;
+  title: string;
+  type: string;
+  content: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface PaginationType {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
+// =========== HELPER FUNCTIONS (Fungsi Bantu) ===========
+const getStatusColor = (isActive: boolean) => {
+  return isActive
+    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-400"
+    : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300 border-gray-400";
+};
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+const ITEMS_PER_PAGE = 8;
+
+// =========== MAIN COMPONENT (Komponen Utama Halaman) ===========
 export default function ClausesPage() {
   const [clauses, setClauses] = useState<ClauseTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // New state for enhanced features
+  const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  
+  // Frontend-only state for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortField, setSortField] = useState<keyof ClauseTemplate | null>(null);
+  const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Dialog state
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null);
-  
-  // Form state
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    clause_code: '',
-    title: '',
-    type: '',
-    content: '',
-    is_active: true
-  });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-  // Check authentication on component mount
+  // Fetch all clauses once on component mount
   useEffect(() => {
-    const checkAuth = () => {
-      const authenticated = authUtils.isAuthenticated();
-      setIsAuthenticated(authenticated);
+    const loadClauses = async () => {
+      setLoading(true);
+      try {
+        const response = await clausesApi.getClauses();
+        const responseData = response.data as unknown as {
+          clause_templates: Array<{
+            id: string | number;
+            clause_code: string;
+            title: string;
+            type: string;
+            content: string;
+            is_active: boolean;
+            created_at: string;
+            updated_at: string;
+          }>;
+        };
 
-      if (!authenticated) {
-        window.location.href = '/login';
-        return;
+        if (responseData && Array.isArray(responseData.clause_templates)) {
+          const formattedClauses = responseData.clause_templates.map((template) => ({
+            ...template,
+            id: Number(template.id),
+          }));
+
+          setClauses(formattedClauses);
+        }
+      } catch (error) {
+        console.error("Error fetching clauses:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkAuth();
-  }, []);
+    loadClauses();
+  }, [refreshTrigger]);
 
-  // Fetch clauses from API
-  const fetchClauses = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await clausesApi.getClauses();
-      console.log(response.data);
-      setClauses(response.data.clause_templates);
-    } catch (err) {
-      setError("Failed to fetch clauses. Please try again.");
-      console.error("Error fetching clauses:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch clauses when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchClauses();
-    }
-  }, [isAuthenticated]);
-
-  // Filter and sort clauses
+  // Frontend filtering, sorting, and pagination logic
   const filteredAndSortedClauses = useMemo(() => {
-    const filtered = clauses.filter(clause =>
-      clause.title.toLowerCase().includes(searchTerm.toLowerCase())
+    let filtered = clauses.filter(clause =>
+      clause.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      clause.clause_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      clause.type.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (sortField) {
       filtered.sort((a, b) => {
-        const aValue = a[sortField];
-        const bValue = b[sortField];
+        let aValue: any = a[sortField as keyof ClauseTemplate];
+        let bValue: any = b[sortField as keyof ClauseTemplate];
 
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortDirection === 'asc'
-            ? aValue.localeCompare(bValue)
-            : bValue.localeCompare(aValue);
+        // Handle date sorting
+        if (sortField === 'created_at' || sortField === 'updated_at') {
+          aValue = new Date(aValue).getTime();
+          bValue = new Date(bValue).getTime();
         }
 
-        if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
-          return sortDirection === 'asc'
-            ? (aValue === bValue ? 0 : aValue ? 1 : -1)
-            : (aValue === bValue ? 0 : aValue ? -1 : 1);
+        // Handle boolean sorting
+        if (sortField === 'is_active') {
+          aValue = aValue ? 1 : 0;
+          bValue = bValue ? 1 : 0;
         }
 
-        if (typeof aValue === 'string' && typeof bValue === 'string' &&
-            (sortField === 'updated_at' || sortField === 'created_at')) {
-          const aDate = new Date(aValue);
-          const bDate = new Date(bValue);
-          return sortDirection === 'asc'
-            ? aDate.getTime() - bDate.getTime()
-            : bDate.getTime() - aDate.getTime();
-        }
-
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
         return 0;
       });
     }
@@ -131,18 +135,16 @@ export default function ClausesPage() {
     return filtered;
   }, [clauses, searchTerm, sortField, sortDirection]);
 
-  // Paginate filtered results
   const paginatedClauses = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return filteredAndSortedClauses.slice(startIndex, endIndex);
   }, [filteredAndSortedClauses, currentPage, itemsPerPage]);
 
-  // Calculate total pages
   const totalPages = Math.ceil(filteredAndSortedClauses.length / itemsPerPage);
 
   // Handle sorting
-  const handleSort = (field: keyof ClauseTemplate) => {
+  const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -158,868 +160,238 @@ export default function ClausesPage() {
 
   // Handle items per page change
   const handleItemsPerPageChange = (value: string) => {
-    const newItemsPerPage = parseInt(value);
-    setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1); // Reset to first page
+    setItemsPerPage(parseInt(value));
+    setCurrentPage(1);
   };
 
-  // Handle opening clause details dialog
-  const handleOpenClauseDetails = (clause: ClauseTemplate) => {
-    setSelectedClause(clause);
-    setIsDialogOpen(true);
+  const handlePreviousPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  // Handle closing dialog
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setSelectedClause(null);
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
-  // Handle opening create dialog
-  const handleOpenCreateDialog = () => {
-    setFormData({
-      clause_code: '',
-      title: '',
-      type: '',
-      content: '',
-      is_active: true
-    });
-    setFormErrors({});
-    setIsCreateDialogOpen(true);
-  };
+  const handleInfoClick = (clause: ClauseTemplate) => {
+    setSelectedClause(clause)
+    setIsModalOpen(true)
+  }
 
-  // Handle opening update dialog
-  const handleOpenUpdateDialog = () => {
-    if (selectedClause) {
-      setFormData({
-        clause_code: selectedClause.clause_code || '',
-        title: selectedClause.title,
-        type: selectedClause.type,
-        content: selectedClause.content || '',
-        is_active: selectedClause.is_active
-      });
-      setFormErrors({});
-      setIsUpdateDialogOpen(true);
-    }
-  };
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedClause(null)
+  }
 
-  // Handle form input changes
-  const handleFormChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (formErrors[field]) {
-      setFormErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  // Form validation
-  const validateForm = () => {
-    const errors: Record<string, string> = {};
-
-    if (!formData.clause_code.trim()) {
-      errors.clause_code = 'Clause code is required';
-    }
-    if (!formData.title.trim()) {
-      errors.title = 'Title is required';
-    }
-    if (!formData.type.trim()) {
-      errors.type = 'Type is required';
-    }
-    if (!formData.content.trim()) {
-      errors.content = 'Content is required';
-    } else if (formData.content.trim().length < 10) {
-      errors.content = 'Content must be at least 10 characters long';
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Handle create clause
-  const handleCreateClause = async () => {
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-    try {
-      console.log('🎯 Submitting form data:', formData);
-      console.log('🎯 Form data keys:', Object.keys(formData));
-      console.log('🎯 Form data values:', Object.values(formData));
-
-      const response = await clausesApi.createClause(formData);
-      console.log('🎯 Create response:', response);
-
-      setIsCreateDialogOpen(false);
-      setFormData({
-        clause_code: '',
-        title: '',
-        type: '',
-        content: '',
-        is_active: true
-      });
-      setError(null); // Clear any previous errors
-      // Refresh the clauses list
-      fetchClauses();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: unknown; message?: string }; status?: number; headers?: unknown }; message?: string };
-      console.error('❌ Error creating clause:', error);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Error status:', error.response?.status);
-      console.error('❌ Error headers:', error.response?.headers);
-
-      // Extract detailed validation errors
-      let errorMessage = 'Please try again.';
-      
-      if (error.response?.data?.error) {
-        // If there are specific field validation errors
-        const validationErrors = error.response.data.error;
-        console.log('🔍 Validation errors:', validationErrors);
-
-        if (typeof validationErrors === 'object') {
-          const errorDetails = Object.entries(validationErrors)
-            .map(([field, message]) => `${field}: ${message}`)
-            .join(', ');
-          errorMessage = `Validation failed: ${errorDetails}`;
-        } else {
-          errorMessage = `Validation failed: ${validationErrors}`;
-        }
-      } else {
-        errorMessage = (error.response?.data?.message as string) ||
-                      (error.response?.data?.error as string) ||
-                      error.message ||
-                      'Please try again.';
-      }
-
-      setError(`Failed to create clause: ${errorMessage}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle update clause
-  const handleUpdateClause = async () => {
-    if (!validateForm() || !selectedClause) return;
-
-    setIsSubmitting(true);
-    try {
-      console.log('Updating clause with ID:', selectedClause.id, 'and data:', formData);
-      await clausesApi.updateClause(selectedClause.id, formData);
-      setIsUpdateDialogOpen(false);
-      setIsDialogOpen(false);
-      setSelectedClause(null);
-      setError(null); // Clear any previous errors
-      // Refresh the clauses list
-      fetchClauses();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string }; status?: number }; message?: string };
-      console.error('Error updating clause:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      setError(`Failed to update clause: ${error.response?.data?.message || error.message || 'Please try again.'}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle closing create/update dialogs
-  const handleCloseCreateDialog = () => {
-    setIsCreateDialogOpen(false);
-    setFormData({
-      clause_code: '',
-      title: '',
-      type: '',
-      content: '',
-      is_active: true
-    });
-    setFormErrors({});
-  };
-
-  const handleCloseUpdateDialog = () => {
-    setIsUpdateDialogOpen(false);
-    setFormErrors({});
-  };
-
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  };
-
-  // Get status display
-  const getStatusDisplay = (isActive: boolean) => {
-    return isActive ? "Active" : "Inactive";
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    authUtils.logout();
-  };
-
-  // Show loading if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="flex items-center">
-          <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-          <span className="text-gray-600">Checking authentication...</span>
-        </div>
-      </div>
-    );
+  const handleCreateSuccess = () => {
+    setRefreshTrigger((prev) => prev + 1)
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <div className="container mx-auto py-8 px-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-primary">Clauses</h1>
-          <div className="flex items-center space-x-3">
-            <Button
-              className="bg-primary hover:bg-primary/90 text-white"
-              onClick={handleOpenCreateDialog}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Clause
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleLogout}
-              className="border-primary text-primary hover:bg-primary/10"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-
-
-         {/* Error Message */}
-         {error && (
-           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-             <p className="text-red-600">{error}</p>
-           </div>
-         )}
-
-         {/* Search Bar */}
-         <div className="mb-6">
-           <div className="relative max-w-md">
-             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-             <Input
-               type="text"
-               placeholder="Search clauses by name..."
-               value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
-               className="pl-10"
-             />
-           </div>
-         </div>
-
-         {/* Table */}
-         <div className="border border-gray-300 rounded-xl bg-white shadow-sm">
-           <Table>
-             <TableHeader>
-               <TableRow className="border-b border-gray-300">
-                 <TableHead
-                   className="font-semibold text-black cursor-pointer hover:bg-gray-50 select-none"
-                   onClick={() => handleSort('title')}
-                 >
-                   <div className="flex items-center space-x-1">
-                     <span>Clause Name</span>
-                     {sortField === 'title' && (
-                       sortDirection === 'asc' ?
-                         <ChevronUp className="h-4 w-4" /> :
-                         <ChevronDown className="h-4 w-4" />
-                     )}
-                   </div>
-                 </TableHead>
-                 <TableHead
-                   className="font-semibold text-black cursor-pointer hover:bg-gray-50 select-none"
-                   onClick={() => handleSort('type')}
-                 >
-                   <div className="flex items-center space-x-1">
-                     <span>Type</span>
-                     {sortField === 'type' && (
-                       sortDirection === 'asc' ?
-                         <ChevronUp className="h-4 w-4" /> :
-                         <ChevronDown className="h-4 w-4" />
-                     )}
-                   </div>
-                 </TableHead>
-                 <TableHead
-                   className="font-semibold text-black cursor-pointer hover:bg-gray-50 select-none"
-                   onClick={() => handleSort('is_active')}
-                 >
-                   <div className="flex items-center space-x-1">
-                     <span>Status</span>
-                     {sortField === 'is_active' && (
-                       sortDirection === 'asc' ?
-                         <ChevronUp className="h-4 w-4" /> :
-                         <ChevronDown className="h-4 w-4" />
-                     )}
-                   </div>
-                 </TableHead>
-                 <TableHead
-                   className="font-semibold text-black cursor-pointer hover:bg-gray-50 select-none"
-                   onClick={() => handleSort('updated_at')}
-                 >
-                   <div className="flex items-center space-x-1">
-                     <span>Last Modified</span>
-                     {sortField === 'updated_at' && (
-                       sortDirection === 'asc' ?
-                         <ChevronUp className="h-4 w-4" /> :
-                         <ChevronDown className="h-4 w-4" />
-                     )}
-                   </div>
-                 </TableHead>
-                 <TableHead className="font-semibold text-black text-center w-16">
-                   Info
-                 </TableHead>
-               </TableRow>
-             </TableHeader>
-             <TableBody>
-               {loading ? (
-                 <TableRow>
-                   <TableCell colSpan={5} className="text-center py-8">
-                     <div className="flex items-center justify-center">
-                       <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-                       <span className="text-gray-600">Loading clauses...</span>
-                     </div>
-                   </TableCell>
-                 </TableRow>
-               ) : paginatedClauses.length === 0 ? (
-                 <TableRow>
-                   <TableCell colSpan={5} className="text-center py-8">
-                     <span className="text-gray-600">
-                       {searchTerm ? 'No clauses found matching your search' : 'No clauses found'}
-                     </span>
-                   </TableCell>
-                 </TableRow>
-               ) : (
-                 paginatedClauses.map((clause) => (
-                   <TableRow key={clause.id} className="border-b border-gray-300 hover:bg-primary/5">
-                     <TableCell className="font-medium text-black">{clause.title}</TableCell>
-                     <TableCell className="text-black">{clause.type}</TableCell>
-                     <TableCell>
-                       <span
-                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                           clause.is_active
-                             ? "bg-blue-100 text-blue-800"
-                             : "bg-gray-100 text-gray-800"
-                         }`}
-                       >
-                         {getStatusDisplay(clause.is_active)}
-                       </span>
-                     </TableCell>
-                     <TableCell className="text-black">{formatDate(clause.updated_at)}</TableCell>
-                     <TableCell className="text-center">
-                       <Button
-                         variant="ghost"
-                         onClick={() => handleOpenClauseDetails(clause)}
-                         className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
-                       >
-                         <Info className="h-4 w-4 text-primary" />
-                       </Button>
-                     </TableCell>
-                   </TableRow>
-                 ))
-               )}
-             </TableBody>
-           </Table>
-         </div>
-
-         {/* Pagination Controls */}
-         {!loading && filteredAndSortedClauses.length > 0 && (
-           <div className="mt-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-             {/* Items per page selector */}
-             <div className="flex items-center space-x-2">
-               <span className="text-sm text-gray-600">Show</span>
-               <UltraSimpleSelect
-                 value={itemsPerPage.toString()}
-                 onValueChange={handleItemsPerPageChange}
-                 options={[
-                   { value: "5", label: "5" },
-                   { value: "10", label: "10" },
-                   { value: "25", label: "25" },
-                   { value: "50", label: "50" },
-                   { value: "100", label: "100" }
-                 ]}
-                 className="w-20"
-               />
-               <span className="text-sm text-gray-600">items per page</span>
-             </div>
-
-             {/* Pagination info */}
-             <div className="text-sm text-gray-600">
-               Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedClauses.length)} of {filteredAndSortedClauses.length} results
-             </div>
-
-             {/* Pagination buttons */}
-             <div className="flex items-center space-x-2">
-               <Button
-                 variant="secondary"
-                 onClick={() => handlePageChange(currentPage - 1)}
-                 disabled={currentPage === 1}
-                 className="flex items-center space-x-1 text-sm px-3 py-1"
-               >
-                 <ChevronLeft className="h-4 w-4" />
-                 <span>Previous</span>
-               </Button>
-
-               {/* Page numbers */}
-               <div className="flex items-center space-x-1">
-                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                   let pageNum;
-                   if (totalPages <= 5) {
-                     pageNum = i + 1;
-                   } else if (currentPage <= 3) {
-                     pageNum = i + 1;
-                   } else if (currentPage >= totalPages - 2) {
-                     pageNum = totalPages - 4 + i;
-                   } else {
-                     pageNum = currentPage - 2 + i;
-                   }
-
-                   return (
-                     <Button
-                       key={pageNum}
-                       variant={currentPage === pageNum ? "primary" : "secondary"}
-                       onClick={() => handlePageChange(pageNum)}
-                       className="w-8 h-8 p-0 text-sm"
-                     >
-                       {pageNum}
-                     </Button>
-                   );
-                 })}
-               </div>
-
-               <Button
-                 variant="secondary"
-                 onClick={() => handlePageChange(currentPage + 1)}
-                 disabled={currentPage === totalPages}
-                 className="flex items-center space-x-1 text-sm px-3 py-1"
-               >
-                 <span>Next</span>
-                 <ChevronRight className="h-4 w-4" />
-               </Button>
-             </div>
-           </div>
-         )}
-
-         {/* Clause Details Dialog */}
-         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-             <DialogHeader>
-               <div className="flex items-center justify-between">
-                 <div>
-                   <DialogTitle className="text-2xl font-bold text-gray-900">
-                     {selectedClause?.title}
-                   </DialogTitle>
-                   <DialogDescription className="mt-2">
-                     Clause Details and Information
-                   </DialogDescription>
-                 </div>
-                 <Button
-                   variant="ghost"
-                   onClick={handleCloseDialog}
-                   className="h-8 w-8 p-0 hover:bg-gray-100"
-                 >
-                   <X className="h-4 w-4" />
-                 </Button>
-               </div>
-             </DialogHeader>
-
-             {selectedClause && (
-               <div className="p-6 space-y-6">
-                 {/* Basic Information */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="space-y-4">
-                     <div>
-                       <label className="text-sm font-medium text-gray-500">Clause ID</label>
-                       <p className="text-sm text-gray-900 font-mono">{selectedClause.id}</p>
-                     </div>
-                     <div>
-                       <label className="text-sm font-medium text-gray-500">Type</label>
-                       <p className="text-sm text-gray-900">{selectedClause.type}</p>
-                     </div>
-                     <div>
-                       <label className="text-sm font-medium text-gray-500">Status</label>
-                       <span
-                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                           selectedClause.is_active
-                             ? "bg-green-100 text-green-800"
-                             : "bg-red-100 text-red-800"
-                         }`}
-                       >
-                         {getStatusDisplay(selectedClause.is_active)}
-                       </span>
-                     </div>
-                   </div>
-
-                   <div className="space-y-4">
-                     <div>
-                       <label className="text-sm font-medium text-gray-500">Created At</label>
-                       <p className="text-sm text-gray-900">{formatDate(selectedClause.created_at)}</p>
-                     </div>
-                     <div>
-                       <label className="text-sm font-medium text-gray-500">Last Modified</label>
-                       <p className="text-sm text-gray-900">{formatDate(selectedClause.updated_at)}</p>
-                     </div>
-                   </div>
-                 </div>
-
-                 {/* Clause Content Section */}
-                 <div className="border-t pt-6">
-                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Clause Content</h3>
-                   <div className="bg-gray-50 rounded-lg p-4">
-                     <p className="text-sm text-gray-700 leading-relaxed">
-                       This is where the detailed clause content would be displayed.
-                       The actual content would come from the backend API response.
-                       For now, this is a placeholder to show the structure of the dialog.
-                     </p>
-                     <p className="text-sm text-gray-700 leading-relaxed mt-3">
-                       In a real implementation, you would fetch the full clause content
-                       from the API using the clause ID: <code className="bg-gray-200 px-1 rounded">{selectedClause.id}</code>
-                     </p>
-                   </div>
-                 </div>
-
-                 {/* Additional Information */}
-                 <div className="border-t pt-6">
-                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="bg-blue-50 rounded-lg p-4">
-                       <h4 className="font-medium text-blue-900 mb-2">Usage Statistics</h4>
-                       <p className="text-sm text-blue-700">
-                         This clause has been used in 0 contracts.
-                       </p>
-                     </div>
-                     <div className="bg-green-50 rounded-lg p-4">
-                       <h4 className="font-medium text-green-900 mb-2">Version History</h4>
-                       <p className="text-sm text-green-700">
-                         Current version: 1.0
-                       </p>
-                     </div>
-                   </div>
-                 </div>
-               </div>
-             )}
-
-             <DialogFooter>
-               <Button variant="secondary" onClick={handleCloseDialog}>
-                 Close
-               </Button>
-               <Button variant="primary" onClick={handleOpenUpdateDialog}>
-                 <Edit className="h-4 w-4 mr-2" />
-                 Edit Clause
-               </Button>
-             </DialogFooter>
-           </DialogContent>
-         </Dialog>
-
-         {/* Create Clause Dialog */}
-         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-             <DialogHeader>
-               <div className="flex items-center justify-between">
-                 <div>
-                   <DialogTitle className="text-2xl font-bold text-gray-900">
-                     Create New Clause
-                   </DialogTitle>
-                   <DialogDescription className="mt-2">
-                     Fill in the details to create a new clause template
-                   </DialogDescription>
-                 </div>
-                 <Button
-                   variant="ghost"
-                   onClick={handleCloseCreateDialog}
-                   className="h-8 w-8 p-0 hover:bg-gray-100"
-                 >
-                   <X className="h-4 w-4" />
-                 </Button>
-               </div>
-             </DialogHeader>
-
-             <div className="p-6 space-y-6">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 {/* Clause Code */}
-                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-700">
-                     Clause Code *
-                   </label>
-                   <Input
-                     value={formData.clause_code}
-                     onChange={(e) => handleFormChange('clause_code', e.target.value)}
-                     placeholder="e.g., PAYMENT_001"
-                     className={formErrors.clause_code ? 'border-red-500' : ''}
-                   />
-                   {formErrors.clause_code && (
-                     <p className="text-sm text-red-600">{formErrors.clause_code}</p>
-                   )}
-                 </div>
-
-                 {/* Title */}
-                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-700">
-                     Title *
-                   </label>
-                   <Input
-                     value={formData.title}
-                     onChange={(e) => handleFormChange('title', e.target.value)}
-                     placeholder="e.g., Standard Payment Terms"
-                     className={formErrors.title ? 'border-red-500' : ''}
-                   />
-                   {formErrors.title && (
-                     <p className="text-sm text-red-600">{formErrors.title}</p>
-                   )}
-                 </div>
-               </div>
-
-               {/* Type */}
-               <div className="space-y-2">
-                 <label className="text-sm font-medium text-gray-700">
-                   Type *
-                 </label>
-                 <Input
-                   value={formData.type}
-                   onChange={(e) => handleFormChange('type', e.target.value)}
-                   placeholder="e.g., Payment, Legal, Terms"
-                   className={formErrors.type ? 'border-red-500' : ''}
-                 />
-                 {formErrors.type && (
-                   <p className="text-sm text-red-600">{formErrors.type}</p>
-                 )}
-               </div>
-
-               {/* Content */}
-               <div className="space-y-2">
-                 <label className="text-sm font-medium text-gray-700">
-                   Content *
-                 </label>
-                 <textarea
-                   value={formData.content}
-                   onChange={(e) => handleFormChange('content', e.target.value)}
-                   placeholder="Enter the detailed clause content..."
-                   rows={6}
-                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-                     formErrors.content ? 'border-red-500' : 'border-gray-300'
-                   }`}
-                 />
-                 {formErrors.content && (
-                   <p className="text-sm text-red-600">{formErrors.content}</p>
-                 )}
-               </div>
-
-               {/* Active Status Toggle */}
-               <div className="space-y-2">
-                 <label className="text-sm font-medium text-gray-700">
-                   Status
-                 </label>
-                 <div className="flex space-x-2">
-                   <button
-                     type="button"
-                     onClick={() => handleFormChange('is_active', true)}
-                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                       formData.is_active
-                         ? 'bg-blue-500 text-white shadow-md'
-                         : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                     }`}
-                   >
-                     Active
-                   </button>
-                   <button
-                     type="button"
-                     onClick={() => handleFormChange('is_active', false)}
-                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                       !formData.is_active
-                         ? 'bg-red-500 text-white shadow-md'
-                         : 'bg-red-100 text-red-600 hover:bg-red-200'
-                     }`}
-                   >
-                     Inactive
-                   </button>
-                 </div>
-               </div>
-             </div>
-
-             <DialogFooter>
-               <Button variant="secondary" onClick={handleCloseCreateDialog}>
-                 Cancel
-               </Button>
-               <Button
-                 variant="primary"
-                 onClick={handleCreateClause}
-                 disabled={isSubmitting}
-               >
-                 {isSubmitting ? (
-                   <>
-                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                     Creating...
-                   </>
-                 ) : (
-                   <>
-                     <Save className="h-4 w-4 mr-2" />
-                     Create Clause
-                   </>
-                 )}
-               </Button>
-             </DialogFooter>
-           </DialogContent>
-         </Dialog>
-
-         {/* Update Clause Dialog */}
-         <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
-           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-             <DialogHeader>
-               <div className="flex items-center justify-between">
-                 <div>
-                   <DialogTitle className="text-2xl font-bold text-gray-900">
-                     Update Clause
-                   </DialogTitle>
-                   <DialogDescription className="mt-2">
-                     Modify the clause details below
-                   </DialogDescription>
-                 </div>
-                 <Button
-                   variant="ghost"
-                   onClick={handleCloseUpdateDialog}
-                   className="h-8 w-8 p-0 hover:bg-gray-100"
-                 >
-                   <X className="h-4 w-4" />
-                 </Button>
-               </div>
-             </DialogHeader>
-
-             <div className="p-6 space-y-6">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 {/* Clause Code */}
-                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-700">
-                     Clause Code *
-                   </label>
-                   <Input
-                     value={formData.clause_code}
-                     onChange={(e) => handleFormChange('clause_code', e.target.value)}
-                     placeholder="e.g., PAYMENT_001"
-                     className={formErrors.clause_code ? 'border-red-500' : ''}
-                   />
-                   {formErrors.clause_code && (
-                     <p className="text-sm text-red-600">{formErrors.clause_code}</p>
-                   )}
-                 </div>
-
-                 {/* Title */}
-                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-700">
-                     Title *
-                   </label>
-                   <Input
-                     value={formData.title}
-                     onChange={(e) => handleFormChange('title', e.target.value)}
-                     placeholder="e.g., Standard Payment Terms"
-                     className={formErrors.title ? 'border-red-500' : ''}
-                   />
-                   {formErrors.title && (
-                     <p className="text-sm text-red-600">{formErrors.title}</p>
-                   )}
-                 </div>
-               </div>
-
-               {/* Type */}
-               <div className="space-y-2">
-                 <label className="text-sm font-medium text-gray-700">
-                   Type *
-                 </label>
-                 <Input
-                   value={formData.type}
-                   onChange={(e) => handleFormChange('type', e.target.value)}
-                   placeholder="e.g., Payment, Legal, Terms"
-                   className={formErrors.type ? 'border-red-500' : ''}
-                 />
-                 {formErrors.type && (
-                   <p className="text-sm text-red-600">{formErrors.type}</p>
-                 )}
-               </div>
-
-               {/* Content */}
-               <div className="space-y-2">
-                 <label className="text-sm font-medium text-gray-700">
-                   Content *
-                 </label>
-                 <textarea
-                   value={formData.content}
-                   onChange={(e) => handleFormChange('content', e.target.value)}
-                   placeholder="Enter the detailed clause content..."
-                   rows={6}
-                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-                     formErrors.content ? 'border-red-500' : 'border-gray-300'
-                   }`}
-                 />
-                 {formErrors.content && (
-                   <p className="text-sm text-red-600">{formErrors.content}</p>
-                 )}
-               </div>
-
-               {/* Active Status Toggle */}
-               <div className="space-y-2">
-                 <label className="text-sm font-medium text-gray-700">
-                   Status
-                 </label>
-                 <div className="flex space-x-2">
-                   <button
-                     type="button"
-                     onClick={() => handleFormChange('is_active', true)}
-                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                       formData.is_active
-                         ? 'bg-blue-500 text-white shadow-md'
-                         : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                     }`}
-                   >
-                     Active
-                   </button>
-                   <button
-                     type="button"
-                     onClick={() => handleFormChange('is_active', false)}
-                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                       !formData.is_active
-                         ? 'bg-red-500 text-white shadow-md'
-                         : 'bg-red-100 text-red-600 hover:bg-red-200'
-                     }`}
-                   >
-                     Inactive
-                   </button>
-                 </div>
-               </div>
-             </div>
-
-             <DialogFooter>
-               <Button variant="secondary" onClick={handleCloseUpdateDialog}>
-                 Cancel
-               </Button>
-               <Button
-                 variant="primary"
-                 onClick={handleUpdateClause}
-                 disabled={isSubmitting}
-               >
-                 {isSubmitting ? (
-                   <>
-                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                     Updating...
-                   </>
-                 ) : (
-                   <>
-                     <Save className="h-4 w-4 mr-2" />
-                     Update Clause
-                   </>
-                 )}
-               </Button>
-             </DialogFooter>
-           </DialogContent>
-         </Dialog>
-
+    <div className="space-y-6">
+      {/* Header Halaman */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-foreground">Clauses</h1>
+        <Button onClick={() => setIsCreateModalOpen(true)}
+          style={{ backgroundColor: "#137fec", color: "#fff" }}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Clause
+        </Button>
       </div>
+
+      {/* Tabel Klausa */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>All Clauses</CardTitle>
+              <CardDescription>Manage and view all clause templates.</CardDescription>
+            </div>
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search by title, code, or type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th 
+                    className="text-left py-3 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleSort('title')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Clause Name</span>
+                      {sortField === 'title' && (
+                        sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-left py-3 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleSort('type')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Type</span>
+                      {sortField === 'type' && (
+                        sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-left py-3 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleSort('is_active')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Status</span>
+                      {sortField === 'is_active' && (
+                        sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-left py-3 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleSort('updated_at')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Last Modified</span>
+                      {sortField === 'updated_at' && (
+                        sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Info</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8">
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : Array.isArray(paginatedClauses) && paginatedClauses.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8 text-muted-foreground">
+                      {searchTerm ? 'No clauses found matching your search.' : 'No clauses found.'}
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedClauses.map((clause) => (
+                    <tr key={clause.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3 px-4">
+                        <p className="font-medium text-foreground">{clause.title}</p>
+                        <p className="text-sm text-muted-foreground">Code: {clause.clause_code}</p>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant="secondary">{clause.type}</Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant="outline" className={getStatusColor(clause.is_active)}>
+                          {clause.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-foreground">{formatDate(clause.updated_at)}</td>
+                      <td className="py-3 px-4">
+                        <Button variant="ghost" size="sm" onClick={() => handleInfoClick(clause)}>
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Items per page selector */}
+      {!loading && filteredAndSortedClauses.length > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Items per page:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => handleItemsPerPageChange(e.target.value)}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, filteredAndSortedClauses.length)} of {filteredAndSortedClauses.length} clauses
+          </p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-center space-x-2">
+          <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Previous
+          </Button>
+          
+          {/* Page numbers */}
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+            
+            return (
+              <Button
+                key={pageNum}
+                variant={currentPage === pageNum ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(pageNum)}
+                className="w-8 h-8 p-0"
+              >
+                {pageNum}
+              </Button>
+            );
+          })}
+          
+          <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
+
+      <ClauseDetailModal
+        clause={selectedClause}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSuccess={handleCreateSuccess} // Added onSuccess callback
+      />
+
+      {/* Clause Table */}
+        <CreateClauseModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleCreateSuccess}
+        />
     </div>
   );
 }
