@@ -11,8 +11,8 @@ const DashboardPage = () => {
   }, []);
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <main style={{ flex: 1, padding: '20px' }}>
+    <div className="pl-64">
+      <main className="p-8">
         <h1>Welcome to the Dashboard</h1>
         <p>Select an option from the sidebar.</p>
       </main>

@@ -22,7 +22,6 @@ import {
   TableRow,
 } from "@/app/components/ui/table";
 import { clausesApi, ClauseTemplate, PaginationInfo, authUtils } from "@/services/api";
-import Sidebar from '../../../components/Sidebar';
 
 export default function ClausesPage() {
   const [clauses, setClauses] = useState<ClauseTemplate[]>([]);
@@ -41,12 +40,12 @@ export default function ClausesPage() {
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null);
-  
+
   // Create/Update dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     clause_code: '',
@@ -55,10 +54,10 @@ export default function ClausesPage() {
     content: '',
     is_active: true
   });
-  
+
   // Form validation
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  
+
 
   // Check authentication on component mount
   useEffect(() => {
@@ -223,7 +222,7 @@ export default function ClausesPage() {
   // Form validation
   const validateForm = () => {
     const errors: Record<string, string> = {};
-    
+
     if (!formData.clause_code.trim()) {
       errors.clause_code = 'Clause code is required';
     }
@@ -238,7 +237,7 @@ export default function ClausesPage() {
     } else if (formData.content.trim().length < 10) {
       errors.content = 'Content must be at least 10 characters long';
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -246,16 +245,16 @@ export default function ClausesPage() {
   // Handle create clause
   const handleCreateClause = async () => {
     if (!validateForm()) return;
-    
+
     setIsSubmitting(true);
     try {
       console.log('🎯 Submitting form data:', formData);
       console.log('🎯 Form data keys:', Object.keys(formData));
       console.log('🎯 Form data values:', Object.values(formData));
-      
+
       const response = await clausesApi.createClause(formData);
       console.log('🎯 Create response:', response);
-      
+
       setIsCreateDialogOpen(false);
       setFormData({
         clause_code: '',
@@ -272,15 +271,15 @@ export default function ClausesPage() {
       console.error('❌ Error response:', err.response?.data);
       console.error('❌ Error status:', err.response?.status);
       console.error('❌ Error headers:', err.response?.headers);
-      
+
       // Extract detailed validation errors
       let errorMessage = 'Please try again.';
-      
+
       if (err.response?.data?.error) {
         // If there are specific field validation errors
         const validationErrors = err.response.data.error;
         console.log('🔍 Validation errors:', validationErrors);
-        
+
         if (typeof validationErrors === 'object') {
           const errorDetails = Object.entries(validationErrors)
             .map(([field, message]) => `${field}: ${message}`)
@@ -290,12 +289,12 @@ export default function ClausesPage() {
           errorMessage = `Validation failed: ${validationErrors}`;
         }
       } else {
-        errorMessage = err.response?.data?.message || 
-                      err.response?.data?.error || 
-                      err.message || 
+        errorMessage = err.response?.data?.message ||
+                      err.response?.data?.error ||
+                      err.message ||
                       'Please try again.';
       }
-      
+
       setError(`Failed to create clause: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
@@ -305,7 +304,7 @@ export default function ClausesPage() {
   // Handle update clause
   const handleUpdateClause = async () => {
     if (!validateForm() || !selectedClause) return;
-    
+
     setIsSubmitting(true);
     try {
       console.log('Updating clause with ID:', selectedClause.id, 'and data:', formData);
@@ -383,7 +382,7 @@ export default function ClausesPage() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-primary">Clauses</h1>
           <div className="flex items-center space-x-3">
-            <Button 
+            <Button
               className="bg-primary hover:bg-primary/90 text-white"
               onClick={handleOpenCreateDialog}
             >
@@ -542,8 +541,8 @@ export default function ClausesPage() {
              {/* Items per page selector */}
              <div className="flex items-center space-x-2">
                <span className="text-sm text-gray-600">Show</span>
-               <UltraSimpleSelect 
-                 value={itemsPerPage.toString()} 
+               <UltraSimpleSelect
+                 value={itemsPerPage.toString()}
                  onValueChange={handleItemsPerPageChange}
                  options={[
                    { value: "5", label: "5" },
@@ -747,7 +746,7 @@ export default function ClausesPage() {
                  </Button>
                </div>
              </DialogHeader>
-             
+
              <div className="p-6 space-y-6">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  {/* Clause Code */}
@@ -854,8 +853,8 @@ export default function ClausesPage() {
                <Button variant="secondary" onClick={handleCloseCreateDialog}>
                  Cancel
                </Button>
-               <Button 
-                 variant="primary" 
+               <Button
+                 variant="primary"
                  onClick={handleCreateClause}
                  disabled={isSubmitting}
                >
@@ -897,7 +896,7 @@ export default function ClausesPage() {
                  </Button>
                </div>
              </DialogHeader>
-             
+
              <div className="p-6 space-y-6">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  {/* Clause Code */}
@@ -1004,8 +1003,8 @@ export default function ClausesPage() {
                <Button variant="secondary" onClick={handleCloseUpdateDialog}>
                  Cancel
                </Button>
-               <Button 
-                 variant="primary" 
+               <Button
+                 variant="primary"
                  onClick={handleUpdateClause}
                  disabled={isSubmitting}
                >
