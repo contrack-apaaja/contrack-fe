@@ -33,7 +33,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="flex h-full w-64 flex-col bg-sidebar border-r border-sidebar-border">
+    <div className="fixed top-0 left-0 flex w-64 h-full flex-col bg-sidebar border-r border-sidebar-border">
       <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
         <h1 className="text-xl font-bold text-[#137fec]">contrack.</h1>
       </div>
@@ -49,7 +49,7 @@ export function Sidebar() {
               className={cn(
                 "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                 isActive
-                  ? "bg-[#137fec] text-white" 
+                  ? "bg-[#137fec] text-white"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               )}
             >

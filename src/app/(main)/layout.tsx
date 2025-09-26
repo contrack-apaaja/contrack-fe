@@ -16,11 +16,13 @@ export default function MainLayout({
   }, []);
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div className="flex min-h-screen">
       <Sidebar />
-      <main style={{ flex: 1, padding: '20px' }}>
-        {children}
-      </main>
+      <div className="flex-1 pl-64">
+        <main className="w-full p-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
