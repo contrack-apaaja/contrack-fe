@@ -3,7 +3,11 @@
 import React, { useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 
-const DashboardPage = () => {
+export default function MainLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -15,11 +19,8 @@ const DashboardPage = () => {
     <div style={{ display: 'flex', height: '100vh' }}>
       <Sidebar />
       <main style={{ flex: 1, padding: '20px' }}>
-        <h1>Welcome to the Dashboard</h1>
-        <p>Select an option from the sidebar.</p>
+        {children}
       </main>
     </div>
   );
-};
-
-export default DashboardPage;
+}

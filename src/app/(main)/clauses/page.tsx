@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/app/components/ui/table";
 import { clausesApi, ClauseTemplate, PaginationInfo, authUtils } from "@/services/api";
-import Sidebar from '../../components/Sidebar';
+import Sidebar from '../../../components/Sidebar';
 
 export default function ClausesPage() {
   const [clauses, setClauses] = useState<ClauseTemplate[]>([]);
@@ -205,8 +205,6 @@ export default function ClausesPage() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
       <div className="container mx-auto py-8 px-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -551,7 +549,6 @@ export default function ClausesPage() {
          </Dialog>
 
       </div>
-      </main>
     </div>
   );
 }
