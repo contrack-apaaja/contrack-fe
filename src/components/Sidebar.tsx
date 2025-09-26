@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard, FileText, Clipboard, LogOut, User } from "lucide-react"
 import { authUtils } from "@/services/api";
+import Image from 'next/image';
+
 
 
 const navigation = [
@@ -37,7 +39,13 @@ export function Sidebar() {
 
   return (
     <div className="fixed top-0 left-0 flex w-64 h-full flex-col bg-sidebar border-r border-sidebar-border">
-      <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
+      <div className="flex h-16 items-center px-6 border-b border-sidebar-border gap-2">
+        <Image
+          src="/logo/blue.png"
+          alt="Contrack Logo"
+          width={16}
+          height={16}
+        />
         <h1 className="text-xl font-bold text-[#137fec]">contrack.</h1>
       </div>
 
