@@ -12,7 +12,8 @@ import {
   DialogFooter,
 } from '@/app/components/ui/dialog';
 import { Select } from '@/app/components/ui/select';
-import { ChevronLeft, ChevronRight, Plus, X, Eye, Save, Search } from 'lucide-react';
+import { SearchableSelect } from '@/app/components/ui/searchable-select';
+import { ChevronLeft, ChevronRight, Plus, X, Eye, Save, Search, Info } from 'lucide-react';
 import { clausesApi, contractsApi, ClauseTemplate, ContractTemplate } from '@/services/api';
 
 interface Stakeholder {
@@ -25,8 +26,6 @@ interface Stakeholder {
 
 interface ContractFormData {
   project_name: string;
-  package_name: string;
-  external_reference: string;
   contract_type: string;
   signing_place: string;
   signing_date: string;
@@ -43,11 +42,32 @@ interface ContractPreview {
 }
 
 const CreateContractPage = () => {
+  // Contract type options
+  const contractTypeOptions = [
+    { value: 'Kontrak Kerja', label: 'Kontrak Kerja' },
+    { value: 'Kontrak Freelance', label: 'Kontrak Freelance' },
+    { value: 'Kontrak Magang', label: 'Kontrak Magang' },
+    { value: 'Perjanjian Kerahasiaan (NDA)', label: 'Perjanjian Kerahasiaan (NDA)' },
+    { value: 'Perjanjian Non-Kompetisi', label: 'Perjanjian Non-Kompetisi' },
+    { value: 'Kontrak Jual Beli', label: 'Kontrak Jual Beli' },
+    { value: 'Perjanjian Jasa', label: 'Perjanjian Jasa' },
+    { value: 'Perjanjian Sewa', label: 'Perjanjian Sewa' },
+    { value: 'Perjanjian Pinjaman', label: 'Perjanjian Pinjaman' },
+    { value: 'Perjanjian Waralaba', label: 'Perjanjian Waralaba' },
+    { value: 'Perjanjian Kerja Sama', label: 'Perjanjian Kerja Sama' },
+    { value: 'Kontrak Proyek', label: 'Kontrak Proyek' },
+    { value: 'Kontrak Konstruksi', label: 'Kontrak Konstruksi' },
+    { value: 'Kontrak Pemeliharaan', label: 'Kontrak Pemeliharaan' },
+    { value: 'Perjanjian Pasokan', label: 'Perjanjian Pasokan' },
+    { value: 'Perjanjian Hak Kekayaan Intelektual (HKI)', label: 'Perjanjian Hak Kekayaan Intelektual (HKI)' },
+    { value: 'Perjanjian Usaha Patungan', label: 'Perjanjian Usaha Patungan' },
+    { value: 'Perjanjian Penyelesaian Sengketa', label: 'Perjanjian Penyelesaian Sengketa' },
+    { value: 'Perjanjian Pemegang Saham', label: 'Perjanjian Pemegang Saham' }
+  ];
+
   // Form data state
   const [formData, setFormData] = useState<ContractFormData>({
     project_name: '',
-    package_name: '',
-    external_reference: '',
     contract_type: '',
     signing_place: '',
     signing_date: '',
@@ -233,7 +253,7 @@ const CreateContractPage = () => {
 
   // Generate contract content based on template
   const generateContractContent = (template: string) => {
-    const { project_name, package_name, external_reference, contract_type, signing_place, signing_date, total_value, funding_source, stakeholders } = formData;
+    const { project_name, contract_type, signing_place, signing_date, total_value, funding_source, stakeholders } = formData;
     
     let content = '';
     
@@ -243,8 +263,6 @@ const CreateContractPage = () => {
 # CONTRACT AGREEMENT
 
 **Project:** ${project_name}
-**Package:** ${package_name}
-**Reference:** ${external_reference}
 **Type:** ${contract_type}
 
 ## Contract Details
@@ -276,7 +294,6 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
         content = `
 # LEGAL CONTRACT DOCUMENT
 
-**CONTRACT ID:** ${external_reference}
 **DATE:** ${signing_date}
 **LOCATION:** ${signing_place}
 
@@ -289,7 +306,6 @@ ${stakeholders.map((stakeholder, index) => `
 
 ## CONTRACT TERMS
 **PROJECT:** ${project_name}
-**PACKAGE:** ${package_name}
 **VALUE:** $${total_value.toLocaleString()}
 **FUNDING:** ${funding_source}
 
@@ -309,8 +325,6 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
 
 ## 🏗️ Project Information
 - **Project:** ${project_name}
-- **Package:** ${package_name}
-- **Reference:** ${external_reference}
 - **Type:** ${contract_type}
 
 ## 📍 Contract Details
@@ -456,23 +470,114 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
     }
   };
 
+  // Validate contract form
+  const validateContractForm = () => {
+    const errors: string[] = [];
+    
+    if (!formData.project_name.trim()) {
+      errors.push('Project name is required');
+    }
+    
+    if (!formData.contract_type.trim()) {
+      errors.push('Contract type is required');
+    }
+    
+    if (!formData.signing_place.trim()) {
+      errors.push('Signing place is required');
+    }
+    
+    if (!formData.signing_date.trim()) {
+      errors.push('Signing date is required');
+    }
+    
+    if (formData.total_value <= 0) {
+      errors.push('Total value must be greater than 0');
+    }
+    
+    // Check if at least one stakeholder is filled
+    const hasValidStakeholder = formData.stakeholders.some(stakeholder => 
+      stakeholder.role_in_contract.trim() && 
+      stakeholder.representative_name.trim() && 
+      stakeholder.representative_title.trim()
+    );
+    
+    if (!hasValidStakeholder) {
+      errors.push('At least one stakeholder is required');
+    }
+    
+    // Check if at least one clause is selected
+    const hasSelectedClause = selectedClauses.some(clause => clause !== null);
+    
+    if (!hasSelectedClause) {
+      errors.push('At least one clause is required');
+    }
+    
+    if (errors.length > 0) {
+      setError(errors.join(', '));
+      return false;
+    }
+    
+    return true;
+  };
+
   // Save contract
   const handleSaveContract = async () => {
+    if (!validateContractForm()) {
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       console.log('🎯 Saving contract:', formData);
       
-      // Prepare contract data
+      // Prepare contract data to match API structure
       const contractData = {
-        ...formData,
-        clause_template_ids: selectedClauses.filter(Boolean).map(clause => clause?.id)
+        project_name: formData.project_name,
+        package_name: "", // Empty string instead of null
+        external_reference: "", // Empty string instead of null
+        contract_type: formData.contract_type,
+        signing_place: formData.signing_place,
+        signing_date: formData.signing_date,
+        total_value: formData.total_value,
+        funding_source: formData.funding_source,
+        stakeholders: formData.stakeholders.map((stakeholder, index) => ({
+          stakeholder_id: index + 1, // Generate sequential IDs
+          role_in_contract: stakeholder.role_in_contract,
+          representative_name: stakeholder.representative_name,
+          representative_title: stakeholder.representative_title,
+          other_details: stakeholder.other_details || {}
+        })),
+        clause_template_ids: selectedClauses.filter(Boolean).map(clause => parseInt(clause?.id || '0'))
       };
+      
+      console.log('🎯 Prepared contract data:', contractData);
       
       const response = await contractsApi.createContract(contractData);
       console.log('🎯 Contract created:', response);
       
       setError(null);
-      // TODO: Redirect to contracts list or show success message
+      
+      // Show success message
+      alert('Contract created successfully!');
+      
+      // Reset form
+      setFormData({
+        project_name: '',
+        contract_type: '',
+        signing_place: '',
+        signing_date: '',
+        total_value: 0,
+        funding_source: '',
+        stakeholders: [
+          { stakeholder_id: 0, role_in_contract: '', representative_name: '', representative_title: '', other_details: null },
+          { stakeholder_id: 0, role_in_contract: '', representative_name: '', representative_title: '', other_details: null }
+        ],
+        clause_template_ids: []
+      });
+      setSelectedClauses([null]);
+      
+      // TODO: Redirect to contracts list page
+      // window.location.href = '/contracts';
     } catch (err: any) {
       console.error('❌ Error saving contract:', err);
       setError(`Failed to save contract: ${err.response?.data?.message || err.message}`);
@@ -565,8 +670,14 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
                 <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                     Project Name *
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                        The main name or title of the project
+                      </div>
+                    </div>
                   </label>
                   <Input
                     value={formData.project_name}
@@ -577,44 +688,34 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Package Name *
-                  </label>
-                  <Input
-                    value={formData.package_name}
-                    onChange={(e) => handleFormChange('package_name', e.target.value)}
-                    placeholder="Enter package name"
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    External Reference *
-                  </label>
-                  <Input
-                    value={formData.external_reference}
-                    onChange={(e) => handleFormChange('external_reference', e.target.value)}
-                    placeholder="Enter external reference"
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                     Contract Type *
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                        Select the type of contract from the predefined options
+                      </div>
+                    </div>
                   </label>
-                  <Input
+                  <SearchableSelect
                     value={formData.contract_type}
-                    onChange={(e) => handleFormChange('contract_type', e.target.value)}
-                    placeholder="Enter contract type"
+                    onValueChange={(value) => handleFormChange('contract_type', value)}
+                    options={contractTypeOptions}
+                    placeholder="Choose contract type..."
+                    searchPlaceholder="Search contract types..."
                     className="w-full"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                     Signing Place *
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                        Location where the contract will be signed
+                      </div>
+                    </div>
                   </label>
                   <Input
                     value={formData.signing_place}
@@ -625,8 +726,14 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                     Signing Date *
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                        Date when the contract will be signed
+                      </div>
+                    </div>
                   </label>
                   <Input
                     type="date"
@@ -637,8 +744,14 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                     Total Value *
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                        Total monetary value of the contract
+                      </div>
+                    </div>
                   </label>
                   <Input
                     type="number"
@@ -650,14 +763,21 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Funding Source *
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    Funding Source
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                        Source of funding for this contract (optional)
+                      </div>
+                    </div>
                   </label>
                   <Input
                     value={formData.funding_source}
                     onChange={(e) => handleFormChange('funding_source', e.target.value)}
                     placeholder="Enter funding source"
-                    className="w-full"
+                    disabled={formData.total_value === 0}
+                    className={`w-full ${formData.total_value === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   />
                 </div>
               </div>
@@ -697,8 +817,14 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                           Role in Contract *
+                          <div className="group relative">
+                            <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                              Stakeholder's role (e.g., Contractor, Client, Consultant)
+                            </div>
+                          </div>
                         </label>
                         <Input
                           value={stakeholder.role_in_contract}
@@ -709,8 +835,14 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                           Representative Name *
+                          <div className="group relative">
+                            <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                              Full name of the person representing this stakeholder
+                            </div>
+                          </div>
                         </label>
                         <Input
                           value={stakeholder.representative_name}
@@ -721,8 +853,14 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                           Representative Title *
+                          <div className="group relative">
+                            <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                              Job title or position of the representative
+                            </div>
+                          </div>
                         </label>
                         <Input
                           value={stakeholder.representative_title}
@@ -770,10 +908,6 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
                   </div>
                 )}
 
-                {/* Debug info */}
-                <div className="text-xs text-gray-500 mb-2">
-                  Debug: {selectedClauses.length} selected clauses
-                </div>
 
                 {selectedClauses.map((clause, index) => {
                   console.log('🎨 Rendering clause', index, ':', clause);
@@ -797,22 +931,21 @@ ${clause?.content?.replace(/\\n/g, '\n') || ''}
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Select Clause
                         </label>
-                        <select
+                        <SearchableSelect
                           value={clause?.id?.toString() || ''}
-                          onChange={(e) => {
-                            console.log('🎯 Dropdown changed:', e.target.value, 'at index:', index);
+                          onValueChange={(value) => {
+                            console.log('🎯 Dropdown changed:', value, 'at index:', index);
                             console.log('🎯 Current clause at index:', clause);
-                            handleClauseSelection(e.target.value, index);
+                            handleClauseSelection(value, index);
                           }}
-                          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">Choose a clause...</option>
-                          {clauses.filter(clause => clause && clause.id).map((clauseOption) => (
-                            <option key={clauseOption.id} value={clauseOption.id.toString()}>
-                              {clauseOption.title} - {clauseOption.type}
-                            </option>
-                          ))}
-                        </select>
+                          options={clauses.filter(clause => clause && clause.id).map(clauseOption => ({
+                            value: clauseOption.id.toString(),
+                            label: `${clauseOption.title} - ${clauseOption.type}`
+                          }))}
+                          placeholder="Choose a clause..."
+                          searchPlaceholder="Search clauses..."
+                          className="w-full"
+                        />
                       </div>
 
                       {clause && (
