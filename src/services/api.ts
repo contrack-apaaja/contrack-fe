@@ -450,19 +450,150 @@ export const contractsApi = {
   }
 };
 
-// AI Clause Analyze API
+// AI Analysis Types
+export interface ClauseAnalysis {
+  id: number;
+  clause_id: number;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  risk_score: number;
+  analysis_summary: string;
+  identified_risks: string[];
+  recommendations: string[];
+  legal_implications: string;
+  compliance_notes: string;
+  confidence_score: number;
+  model_version: string;
+  created_at: string;
+}
+
+export interface ContractAnalysis {
+  contract_id: number;
+  overall_risk_level: 'low' | 'medium' | 'high' | 'critical';
+  overall_risk_score: number;
+  total_clauses_analyzed: number;
+  high_risk_clauses: number;
+  recommendations: string[];
+}
+
+export interface AIAnalysisResponse {
+  status: string;
+  message: string;
+  data: {
+    analysis: ClauseAnalysis;
+  };
+}
+
+export interface AIContractAnalysisResponse {
+  status: string;
+  message: string;
+  data: {
+    contract_analysis: ContractAnalysis;
+  };
+}
+
+export interface AIClauseAnalysisResponse {
+  status: string;
+  message: string;
+  data: {
+    analysis: ClauseAnalysis;
+    clause: {
+      id: number;
+      code: string;
+      name: string;
+      content: string;
+    };
+  };
+}
+
+export interface AIRecommendationsResponse {
+  status: string;
+  message: string;
+  data: {
+    contract_id: number;
+    recommendations: Array<{
+      clause_id: number;
+      clause_name: string;
+      risk_level: 'low' | 'medium' | 'high' | 'critical';
+      recommendation: string;
+      priority: 'low' | 'medium' | 'high';
+    }>;
+  };
+}
+
+export interface AIStatsResponse {
+  status: string;
+  message: string;
+  data: {
+    total_analyses: number;
+    risk_distribution: {
+      low: number;
+      medium: number;
+      high: number;
+      critical: number;
+    };
+    average_risk_score: number;
+    average_confidence: number;
+    most_analyzed_clause_types: Array<{
+      type: string;
+      count: number;
+    }>;
+  };
+}
+
+// AI Analysis API
 export const aiApi = {
-  analyzeClauses: async (contractId: number, clauseTemplateIds: number[]) => {
-    try {
-      const response = await api.post('/ai/analyze', {
-        contract_id: contractId,
-        clause_template_ids: clauseTemplateIds
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error analyzing clauses:', error);
-      throw error;
-    }
+  // Analyze individual clause
+  analyzeClause: async (clauseId: number): Promise<AIAnalysisResponse> => {
+    const response = await api.post('/api/ai/analyze', {
+      clause_id: clauseId
+    });
+    return response.data as AIAnalysisResponse;
+  },
+
+  // Analyze entire contract
+  analyzeContract: async (contractId: number): Promise<AIContractAnalysisResponse> => {
+    const response = await api.post('/api/ai/analyze-contract', {
+      contract_id: contractId
+    });
+    return response.data as AIContractAnalysisResponse;
+  },
+
+  // Get analysis by clause ID
+  getClauseAnalysis: async (clauseId: number): Promise<AIClauseAnalysisResponse> => {
+    const response = await api.get(`/api/ai/analysis/clause/${clauseId}`);
+    return response.data as AIClauseAnalysisResponse;
+  },
+
+  // Get contract recommendations
+  getContractRecommendations: async (contractId: number): Promise<AIRecommendationsResponse> => {
+    const response = await api.get(`/api/ai/contract/${contractId}/recommendations`);
+    return response.data as AIRecommendationsResponse;
+  },
+
+  // Save contract analysis
+  saveContractAnalysis: async (contractId: number, analysisResults: {
+    overall_risk_score: number;
+    risk_level: string;
+    analyzed_clauses?: Array<{
+      clause_id: number;
+      risk_score: number;
+      risk_level: string;
+      recommendations: string[];
+    }>;
+    summary: string;
+    recommendations: string[];
+  }) => {
+    const response = await api.post('/api/contracts/save-analysis', {
+      contract_id: contractId,
+      analysis_results: analysisResults
+    });
+    return response.data;
+  },
+
+  // Get AI statistics
+  getAIStats: async (): Promise<AIStatsResponse> => {
+    const response = await api.get('/api/ai/stats');
+    return response.data as AIStatsResponse;
   }
 };
 
