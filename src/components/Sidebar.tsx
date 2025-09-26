@@ -5,7 +5,7 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, FileText, Clipboard, LogOut, User, Menu, X } from "lucide-react"
+import { LayoutDashboard, FileText, Clipboard, LogOut, User, Menu, X, CheckCircle, Scale } from "lucide-react"
 import { authUtils } from "@/services/api"
 import { useSidebar } from "@/contexts/SidebarContext"
 
@@ -14,6 +14,8 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Contract", href: "/contracts", icon: FileText },
   { name: "Clause", href: "/clauses", icon: Clipboard },
+  { name: "Legal Review", href: "/legal/contracts", icon: Scale },
+  { name: "Management", href: "/management/contracts", icon: CheckCircle },
 ]
 
 const useAuth = () => {

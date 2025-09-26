@@ -196,6 +196,28 @@ export interface ContractsResponse {
   data: Contract[];
 }
 
+// Contract Approval types
+export interface ContractApprovalRequest {
+  contract_id: number;
+}
+
+export interface ContractApprovalResponse {
+  status: string;
+  message: string;
+  data: {
+    contract_id: number;
+    contract_name: string;
+    total_value: number;
+    risk_level: string;
+    risk_score: number;
+    approval_status: string;
+    approval_message: string;
+    requires_review: boolean;
+    review_reasons: string[];
+    next_steps: string[];
+  };
+}
+
 export interface User {
   id: string;
   email: string;
@@ -304,6 +326,16 @@ export const dashboardApi = {
   }
 };
 
+// Contract Approval API
+export const contractApprovalApi = {
+  approveContract: async (contractId: number): Promise<ContractApprovalResponse> => {
+    const response = await api.post('/api/contracts/approve', {
+      contract_id: contractId
+    });
+    return response.data;
+  }
+};
+
 // Contracts API
 export const contractsApi = {
   getContracts: async (): Promise<{ data: ContractsResponse }> => {
@@ -361,7 +393,7 @@ export const contractsApi = {
     change_reason: string;
     comments?: string;
   }): Promise<{ data: null }> => {
-    const response = await api.post(`/api/contracts/${id}/status/`, data);
+    const response = await api.post(`/api/contracts/${id}/status`, data);
     return response.data as { data: null };
   },
 

@@ -17,12 +17,13 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ data }) => {
   };
 
   // Define all possible statuses with their display names and colors
+  // Order: Draft, Pending Legal Review, Pending Signature, Active, Expired, Terminated
   const statusConfig = [
-    { status: 'ACTIVE', display: 'Active', color: 'green', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
     { status: 'DRAFT', display: 'Draft', color: 'yellow', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
-    { status: 'EXPIRED', display: 'Expired', color: 'red', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z' },
     { status: 'PENDING_LEGAL_REVIEW', display: 'Pending Legal Review', color: 'orange', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { status: 'PENDING_SIGNATURE', display: 'Pending Signature', color: 'blue', icon: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z' },
+    { status: 'ACTIVE', display: 'Active', color: 'green', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { status: 'EXPIRED', display: 'Expired', color: 'red', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z' },
     { status: 'TERMINATED', display: 'Terminated', color: 'gray', icon: 'M6 18L18 6M6 6l12 12' },
   ];
 

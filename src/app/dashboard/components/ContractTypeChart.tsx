@@ -9,6 +9,7 @@ import {
   Legend,
 } from 'chart.js';
 import { ContractTypeDistribution } from '../../../services/api';
+import { getContractTypeColor } from '../../../lib/contractTypeColors';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -18,26 +19,14 @@ interface ContractTypeChartProps {
 }
 
 const ContractTypeChart: React.FC<ContractTypeChartProps> = ({ data }) => {
-  // Define colors for different contract types
-  const getContractTypeColor = (type: string) => {
-    const colors: { [key: string]: string } = {
-      'Construction': '#3B82F6', // Blue
-      'Supply': '#10B981', // Green
-      'Service Agreement': '#F59E0B', // Amber
-      'Service': '#8B5CF6', // Purple
-      'Maintenance': '#EF4444', // Red
-      'Consulting': '#06B6D4', // Cyan
-    };
-    return colors[type] || '#6366F1'; // Default indigo
-  };
 
   const chartData = {
     labels: data.map(item => item.contract_type),
     datasets: [
       {
         data: data.map(item => item.count),
-        backgroundColor: data.map(item => getContractTypeColor(item.contract_type)),
-        borderColor: data.map(item => getContractTypeColor(item.contract_type)),
+        backgroundColor: data.map(item => getContractTypeColor(item.contract_type, true)),
+        borderColor: data.map(item => getContractTypeColor(item.contract_type, true)),
         borderWidth: 2,
         hoverOffset: 4,
       },

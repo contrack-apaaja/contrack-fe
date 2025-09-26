@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Contract } from '../../../services/api';
+import { getContractTypeColor } from '../../../lib/contractTypeColors';
 
 interface ContractsTableProps {
   contracts: Contract[];
@@ -36,16 +37,9 @@ const ContractsTable: React.FC<ContractsTableProps> = ({ contracts }) => {
     return colorMap[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const getContractTypeColor = (type: string) => {
-    const colorMap: { [key: string]: string } = {
-      'Construction': 'bg-blue-100 text-blue-800',
-      'Supply': 'bg-green-100 text-green-800',
-      'Service Agreement': 'bg-purple-100 text-purple-800',
-      'Service': 'bg-indigo-100 text-indigo-800',
-      'Maintenance': 'bg-red-100 text-red-800',
-      'Consulting': 'bg-cyan-100 text-cyan-800',
-    };
-    return colorMap[type] || 'bg-gray-100 text-gray-800';
+  // Use the shared color utility for consistent colors with the chart
+  const getContractTypeColorClass = (type: string) => {
+    return getContractTypeColor(type, false);
   };
 
   return (
@@ -91,7 +85,7 @@ const ContractsTable: React.FC<ContractsTableProps> = ({ contracts }) => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getContractTypeColor(contract.contract_type)}`}>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getContractTypeColorClass(contract.contract_type)}`}>
                     {contract.contract_type}
                   </span>
                 </td>
