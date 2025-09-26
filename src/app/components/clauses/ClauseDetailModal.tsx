@@ -110,6 +110,10 @@ export function ClauseDetailModal({ clause, isOpen, onClose, onSuccess }: Clause
       errors.content = "Content is required"
     }
 
+    if (formData.content.trim().length < 10) {
+      errors.content = "Content must be at least 10 characters long"
+    }
+
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }

@@ -72,6 +72,8 @@ export function CreateClauseModal({ isOpen, onClose, onSuccess }: CreateClauseMo
 
     if (!formData.content.trim()) {
       errors.content = "Content is required"
+    } else if (formData.content.trim().length < 10) {
+      errors.content = "Content must be at least 10 characters long"
     }
 
     setFormErrors(errors)
