@@ -258,7 +258,12 @@ export default function ClausesPage() {
         </div>
       )}
 
-      <ClauseDetailModal clause={selectedClause} isOpen={isModalOpen} onClose={handleCloseModal} />
+      <ClauseDetailModal
+        clause={selectedClause}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSuccess={handleCreateSuccess} // Added onSuccess callback
+      />
 
       {/* Clause Table */}
         <ClauseTable key={refreshTrigger} />
