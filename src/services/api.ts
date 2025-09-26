@@ -18,6 +18,21 @@ export interface ClauseTemplate {
   updated_at: string;
   created_at: string;
 }
+export interface ContractTemplate {
+  id: string;
+  project_name: string;
+  package_name: string;
+  external_reference: string;
+  contract_type: string;
+  signing_place: string;
+  signing_date: string;
+  total_value: number;
+  funding_source: string;
+  stakeholders: Stakeholder[];
+  clause_template_ids: number[];
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Stakeholder {
   id: number;
@@ -230,9 +245,10 @@ export const contractsApi = {
     return response.data as { data: Contract };
   },
 
-  createContract: async (data: CreateContractRequest): Promise<{ data: Contract }> => {
+  createContract: async (data: Partial<ContractTemplate>): Promise<{ data: ContractTemplate }> => {
+    console.log('🚀 API: Creating contract with data:', data);
     const response = await api.post('/api/contracts/', data);
-    return response.data as { data: Contract };
+    return response.data as { data: ContractTemplate };
   },
 
   updateContract: async (id: number, data: Partial<CreateContractRequest>): Promise<{ data: null }> => {
