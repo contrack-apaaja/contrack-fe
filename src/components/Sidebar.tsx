@@ -1,11 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, FileText, Clipboard, LogOut, User } from "lucide-react"
-import { authUtils } from "@/services/api";
+import { LayoutDashboard, FileText, Clipboard, LogOut, User, Menu, X } from "lucide-react"
+import { authUtils } from "@/services/api"
+import { useSidebar } from "@/contexts/SidebarContext"
 
 
 const navigation = [
@@ -14,18 +16,22 @@ const navigation = [
   { name: "Clause", href: "/clauses", icon: Clipboard },
 ]
 
-const useAuth = () => ({
-  user: {
-    name: "John Doe",
-    email: "john.doe@example.com",
-  },
-  logout: () => authUtils.logout(),
-})
+const useAuth = () => {
+  const userData = authUtils.getUserData();
+  return {
+    user: userData ? {
+      email: userData.email,
+      role: userData.role
+    } : null,
+    logout: () => authUtils.logout()
+  };
+}
 
 
 export function Sidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const { isCollapsed, toggleSidebar } = useSidebar()
 
   const handleLogout = async () => {
     await logout()
@@ -34,7 +40,13 @@ export function Sidebar() {
 
   return (
     <div className="fixed top-0 left-0 flex w-64 h-full flex-col bg-sidebar border-r border-sidebar-border">
-      <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
+      <div className="flex h-16 items-center px-6 border-b border-sidebar-border gap-2">
+        <Image
+          src="/logo/blue.png"
+          alt="Contrack Logo"
+          width={16}
+          height={16}
+        />
         <h1 className="text-xl font-bold text-[#137fec]">contrack.</h1>
       </div>
 
@@ -66,8 +78,8 @@ export function Sidebar() {
             <User className="h-4 w-4 text-sidebar-primary-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name}</p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email}</p>
+            <p className="text-xs text-sidebar-foreground/60 truncate">{user?.role}</p>
           </div>
         </div>
         <Button
