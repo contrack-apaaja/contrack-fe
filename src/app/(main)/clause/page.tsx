@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Info, ChevronLeft, ChevronRight, Search, Plus } from "lucide-react";
 import { clausesApi } from "@/services/api";
+import { ClauseDetailModal } from "@/app/components/clauses/ClauseDetailModal";
 
 // =========== INTERFACES (Definisi Tipe Data) ===========
 interface ClauseTemplate {
@@ -50,7 +51,8 @@ const ITEMS_PER_PAGE = 8;
 export default function ClausesPage() {
   const [clauses, setClauses] = useState<ClauseTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationType>({
     page: 1,
@@ -127,6 +129,16 @@ export default function ClausesPage() {
     if (pagination.has_next) setCurrentPage((prev) => prev + 1);
   };
 
+  const handleInfoClick = (clause: ClauseTemplate) => {
+    setSelectedClause(clause)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedClause(null)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Halaman */}
@@ -202,7 +214,7 @@ export default function ClausesPage() {
                       </td>
                       <td className="py-3 px-4 text-foreground">{formatDate(clause.updated_at)}</td>
                       <td className="py-3 px-4">
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="sm" onClick={() => handleInfoClick(clause)}>
                           <Info className="h-4 w-4" />
                         </Button>
                       </td>
@@ -237,6 +249,8 @@ export default function ClausesPage() {
           </div>
         </div>
       )}
+
+      <ClauseDetailModal clause={selectedClause} isOpen={isModalOpen} onClose={handleCloseModal} />
     </div>
   );
 }
