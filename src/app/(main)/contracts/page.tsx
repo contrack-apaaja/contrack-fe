@@ -315,7 +315,7 @@ export default function ContractsPage() {
             <p className="text-gray-600 mt-2">Manage your contracts and track their lifecycle</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => window.location.href = '/contracts/create'} className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
               New Contract
             </Button>
