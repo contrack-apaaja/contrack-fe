@@ -22,7 +22,6 @@ import {
   TableRow,
 } from "@/app/components/ui/table";
 import { contractsApi, Contract, CreateContractRequest, authUtils } from "@/services/api";
-import Sidebar from '../../../components/Sidebar';
 
 const CONTRACT_STATUSES = [
   'DRAFT',

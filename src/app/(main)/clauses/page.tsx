@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/app/components/ui/table";
-import { clausesApi, ClauseTemplate, PaginationInfo, authUtils } from "@/services/api";
+import { clausesApi, ClauseTemplate, authUtils } from "@/services/api";
 
 export default function ClausesPage() {
   const [clauses, setClauses] = useState<ClauseTemplate[]>([]);
@@ -39,13 +39,11 @@ export default function ClausesPage() {
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null);
-
-  // Create/Update dialog state
+  
+  // Form state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Form state
   const [formData, setFormData] = useState({
     clause_code: '',
     title: '',
@@ -53,10 +51,7 @@ export default function ClausesPage() {
     content: '',
     is_active: true
   });
-
-  // Form validation
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
 
   // Check authentication on component mount
   useEffect(() => {
@@ -270,19 +265,11 @@ export default function ClausesPage() {
       console.error('❌ Error response:', error.response?.data);
       console.error('❌ Error status:', error.response?.status);
       console.error('❌ Error headers:', error.response?.headers);
-      
-    } catch (err: any) {
-      console.error('❌ Error creating clause:', err);
-      console.error('❌ Error response:', err.response?.data);
-      console.error('❌ Error status:', err.response?.status);
-      console.error('❌ Error headers:', err.response?.headers);
 
       // Extract detailed validation errors
       let errorMessage = 'Please try again.';
       
       if (error.response?.data?.error) {
-
-      if (err.response?.data?.error) {
         // If there are specific field validation errors
         const validationErrors = error.response.data.error;
         console.log('🔍 Validation errors:', validationErrors);
@@ -296,9 +283,9 @@ export default function ClausesPage() {
           errorMessage = `Validation failed: ${validationErrors}`;
         }
       } else {
-        errorMessage = err.response?.data?.message ||
-                      err.response?.data?.error ||
-                      err.message ||
+        errorMessage = (error.response?.data?.message as string) ||
+                      (error.response?.data?.error as string) ||
+                      error.message ||
                       'Please try again.';
       }
 
