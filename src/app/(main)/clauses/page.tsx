@@ -1,16 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, X } from "lucide-react";
+import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, X, Save, Edit } from "lucide-react";
 import { Button } from "@/app/components/Button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/app/components/ui/select";
+import { UltraSimpleSelect } from "@/app/components/ui/ultra-simple-select";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +22,6 @@ import {
   TableRow,
 } from "@/app/components/ui/table";
 import { clausesApi, ClauseTemplate, PaginationInfo, authUtils } from "@/services/api";
-import Sidebar from '../../components/Sidebar';
 
 export default function ClausesPage() {
   const [clauses, setClauses] = useState<ClauseTemplate[]>([]);
@@ -47,6 +40,23 @@ export default function ClausesPage() {
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClause, setSelectedClause] = useState<ClauseTemplate | null>(null);
+
+  // Create/Update dialog state
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    clause_code: '',
+    title: '',
+    type: '',
+    content: '',
+    is_active: true
+  });
+
+  // Form validation
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
 
   // Check authentication on component mount
@@ -155,7 +165,8 @@ export default function ClausesPage() {
 
   // Handle items per page change
   const handleItemsPerPageChange = (value: string) => {
-    setItemsPerPage(parseInt(value));
+    const newItemsPerPage = parseInt(value);
+    setItemsPerPage(newItemsPerPage);
     setCurrentPage(1); // Reset to first page
   };
 
@@ -169,6 +180,167 @@ export default function ClausesPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedClause(null);
+  };
+
+  // Handle opening create dialog
+  const handleOpenCreateDialog = () => {
+    setFormData({
+      clause_code: '',
+      title: '',
+      type: '',
+      content: '',
+      is_active: true
+    });
+    setFormErrors({});
+    setIsCreateDialogOpen(true);
+  };
+
+  // Handle opening update dialog
+  const handleOpenUpdateDialog = () => {
+    if (selectedClause) {
+      setFormData({
+        clause_code: selectedClause.clause_code || '',
+        title: selectedClause.title,
+        type: selectedClause.type,
+        content: selectedClause.content || '',
+        is_active: selectedClause.is_active
+      });
+      setFormErrors({});
+      setIsUpdateDialogOpen(true);
+    }
+  };
+
+  // Handle form input changes
+  const handleFormChange = (field: string, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  // Form validation
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.clause_code.trim()) {
+      errors.clause_code = 'Clause code is required';
+    }
+    if (!formData.title.trim()) {
+      errors.title = 'Title is required';
+    }
+    if (!formData.type.trim()) {
+      errors.type = 'Type is required';
+    }
+    if (!formData.content.trim()) {
+      errors.content = 'Content is required';
+    } else if (formData.content.trim().length < 10) {
+      errors.content = 'Content must be at least 10 characters long';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle create clause
+  const handleCreateClause = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      console.log('🎯 Submitting form data:', formData);
+      console.log('🎯 Form data keys:', Object.keys(formData));
+      console.log('🎯 Form data values:', Object.values(formData));
+
+      const response = await clausesApi.createClause(formData);
+      console.log('🎯 Create response:', response);
+
+      setIsCreateDialogOpen(false);
+      setFormData({
+        clause_code: '',
+        title: '',
+        type: '',
+        content: '',
+        is_active: true
+      });
+      setError(null); // Clear any previous errors
+      // Refresh the clauses list
+      fetchClauses();
+    } catch (err: any) {
+      console.error('❌ Error creating clause:', err);
+      console.error('❌ Error response:', err.response?.data);
+      console.error('❌ Error status:', err.response?.status);
+      console.error('❌ Error headers:', err.response?.headers);
+
+      // Extract detailed validation errors
+      let errorMessage = 'Please try again.';
+
+      if (err.response?.data?.error) {
+        // If there are specific field validation errors
+        const validationErrors = err.response.data.error;
+        console.log('🔍 Validation errors:', validationErrors);
+
+        if (typeof validationErrors === 'object') {
+          const errorDetails = Object.entries(validationErrors)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join(', ');
+          errorMessage = `Validation failed: ${errorDetails}`;
+        } else {
+          errorMessage = `Validation failed: ${validationErrors}`;
+        }
+      } else {
+        errorMessage = err.response?.data?.message ||
+                      err.response?.data?.error ||
+                      err.message ||
+                      'Please try again.';
+      }
+
+      setError(`Failed to create clause: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle update clause
+  const handleUpdateClause = async () => {
+    if (!validateForm() || !selectedClause) return;
+
+    setIsSubmitting(true);
+    try {
+      console.log('Updating clause with ID:', selectedClause.id, 'and data:', formData);
+      await clausesApi.updateClause(selectedClause.id, formData);
+      setIsUpdateDialogOpen(false);
+      setIsDialogOpen(false);
+      setSelectedClause(null);
+      setError(null); // Clear any previous errors
+      // Refresh the clauses list
+      fetchClauses();
+    } catch (err: any) {
+      console.error('Error updating clause:', err);
+      console.error('Error response:', err.response?.data);
+      console.error('Error status:', err.response?.status);
+      setError(`Failed to update clause: ${err.response?.data?.message || err.message || 'Please try again.'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle closing create/update dialogs
+  const handleCloseCreateDialog = () => {
+    setIsCreateDialogOpen(false);
+    setFormData({
+      clause_code: '',
+      title: '',
+      type: '',
+      content: '',
+      is_active: true
+    });
+    setFormErrors({});
+  };
+
+  const handleCloseUpdateDialog = () => {
+    setIsUpdateDialogOpen(false);
+    setFormErrors({});
   };
 
 
@@ -205,14 +377,15 @@ export default function ClausesPage() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
       <div className="container mx-auto py-8 px-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-primary">Clauses</h1>
           <div className="flex items-center space-x-3">
-            <Button className="bg-primary hover:bg-primary/90 text-white">
+            <Button
+              className="bg-primary hover:bg-primary/90 text-white"
+              onClick={handleOpenCreateDialog}
+            >
               <Plus className="h-4 w-4 mr-2" />
               New Clause
             </Button>
@@ -368,18 +541,18 @@ export default function ClausesPage() {
              {/* Items per page selector */}
              <div className="flex items-center space-x-2">
                <span className="text-sm text-gray-600">Show</span>
-               <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-                 <SelectTrigger className="w-20">
-                   <SelectValue />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="5">5</SelectItem>
-                   <SelectItem value="10">10</SelectItem>
-                   <SelectItem value="25">25</SelectItem>
-                   <SelectItem value="50">50</SelectItem>
-                   <SelectItem value="100">100</SelectItem>
-                 </SelectContent>
-               </Select>
+               <UltraSimpleSelect
+                 value={itemsPerPage.toString()}
+                 onValueChange={handleItemsPerPageChange}
+                 options={[
+                   { value: "5", label: "5" },
+                   { value: "10", label: "10" },
+                   { value: "25", label: "25" },
+                   { value: "50", label: "50" },
+                   { value: "100", label: "100" }
+                 ]}
+                 className="w-20"
+               />
                <span className="text-sm text-gray-600">items per page</span>
              </div>
 
@@ -543,15 +716,315 @@ export default function ClausesPage() {
                <Button variant="secondary" onClick={handleCloseDialog}>
                  Close
                </Button>
-               <Button variant="primary">
+               <Button variant="primary" onClick={handleOpenUpdateDialog}>
+                 <Edit className="h-4 w-4 mr-2" />
                  Edit Clause
                </Button>
              </DialogFooter>
            </DialogContent>
          </Dialog>
 
+         {/* Create Clause Dialog */}
+         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+             <DialogHeader>
+               <div className="flex items-center justify-between">
+                 <div>
+                   <DialogTitle className="text-2xl font-bold text-gray-900">
+                     Create New Clause
+                   </DialogTitle>
+                   <DialogDescription className="mt-2">
+                     Fill in the details to create a new clause template
+                   </DialogDescription>
+                 </div>
+                 <Button
+                   variant="ghost"
+                   onClick={handleCloseCreateDialog}
+                   className="h-8 w-8 p-0 hover:bg-gray-100"
+                 >
+                   <X className="h-4 w-4" />
+                 </Button>
+               </div>
+             </DialogHeader>
+
+             <div className="p-6 space-y-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {/* Clause Code */}
+                 <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-700">
+                     Clause Code *
+                   </label>
+                   <Input
+                     value={formData.clause_code}
+                     onChange={(e) => handleFormChange('clause_code', e.target.value)}
+                     placeholder="e.g., PAYMENT_001"
+                     className={formErrors.clause_code ? 'border-red-500' : ''}
+                   />
+                   {formErrors.clause_code && (
+                     <p className="text-sm text-red-600">{formErrors.clause_code}</p>
+                   )}
+                 </div>
+
+                 {/* Title */}
+                 <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-700">
+                     Title *
+                   </label>
+                   <Input
+                     value={formData.title}
+                     onChange={(e) => handleFormChange('title', e.target.value)}
+                     placeholder="e.g., Standard Payment Terms"
+                     className={formErrors.title ? 'border-red-500' : ''}
+                   />
+                   {formErrors.title && (
+                     <p className="text-sm text-red-600">{formErrors.title}</p>
+                   )}
+                 </div>
+               </div>
+
+               {/* Type */}
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">
+                   Type *
+                 </label>
+                 <Input
+                   value={formData.type}
+                   onChange={(e) => handleFormChange('type', e.target.value)}
+                   placeholder="e.g., Payment, Legal, Terms"
+                   className={formErrors.type ? 'border-red-500' : ''}
+                 />
+                 {formErrors.type && (
+                   <p className="text-sm text-red-600">{formErrors.type}</p>
+                 )}
+               </div>
+
+               {/* Content */}
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">
+                   Content *
+                 </label>
+                 <textarea
+                   value={formData.content}
+                   onChange={(e) => handleFormChange('content', e.target.value)}
+                   placeholder="Enter the detailed clause content..."
+                   rows={6}
+                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                     formErrors.content ? 'border-red-500' : 'border-gray-300'
+                   }`}
+                 />
+                 {formErrors.content && (
+                   <p className="text-sm text-red-600">{formErrors.content}</p>
+                 )}
+               </div>
+
+               {/* Active Status Toggle */}
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">
+                   Status
+                 </label>
+                 <div className="flex space-x-2">
+                   <button
+                     type="button"
+                     onClick={() => handleFormChange('is_active', true)}
+                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                       formData.is_active
+                         ? 'bg-blue-500 text-white shadow-md'
+                         : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                     }`}
+                   >
+                     Active
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => handleFormChange('is_active', false)}
+                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                       !formData.is_active
+                         ? 'bg-red-500 text-white shadow-md'
+                         : 'bg-red-100 text-red-600 hover:bg-red-200'
+                     }`}
+                   >
+                     Inactive
+                   </button>
+                 </div>
+               </div>
+             </div>
+
+             <DialogFooter>
+               <Button variant="secondary" onClick={handleCloseCreateDialog}>
+                 Cancel
+               </Button>
+               <Button
+                 variant="primary"
+                 onClick={handleCreateClause}
+                 disabled={isSubmitting}
+               >
+                 {isSubmitting ? (
+                   <>
+                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                     Creating...
+                   </>
+                 ) : (
+                   <>
+                     <Save className="h-4 w-4 mr-2" />
+                     Create Clause
+                   </>
+                 )}
+               </Button>
+             </DialogFooter>
+           </DialogContent>
+         </Dialog>
+
+         {/* Update Clause Dialog */}
+         <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+             <DialogHeader>
+               <div className="flex items-center justify-between">
+                 <div>
+                   <DialogTitle className="text-2xl font-bold text-gray-900">
+                     Update Clause
+                   </DialogTitle>
+                   <DialogDescription className="mt-2">
+                     Modify the clause details below
+                   </DialogDescription>
+                 </div>
+                 <Button
+                   variant="ghost"
+                   onClick={handleCloseUpdateDialog}
+                   className="h-8 w-8 p-0 hover:bg-gray-100"
+                 >
+                   <X className="h-4 w-4" />
+                 </Button>
+               </div>
+             </DialogHeader>
+
+             <div className="p-6 space-y-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {/* Clause Code */}
+                 <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-700">
+                     Clause Code *
+                   </label>
+                   <Input
+                     value={formData.clause_code}
+                     onChange={(e) => handleFormChange('clause_code', e.target.value)}
+                     placeholder="e.g., PAYMENT_001"
+                     className={formErrors.clause_code ? 'border-red-500' : ''}
+                   />
+                   {formErrors.clause_code && (
+                     <p className="text-sm text-red-600">{formErrors.clause_code}</p>
+                   )}
+                 </div>
+
+                 {/* Title */}
+                 <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-700">
+                     Title *
+                   </label>
+                   <Input
+                     value={formData.title}
+                     onChange={(e) => handleFormChange('title', e.target.value)}
+                     placeholder="e.g., Standard Payment Terms"
+                     className={formErrors.title ? 'border-red-500' : ''}
+                   />
+                   {formErrors.title && (
+                     <p className="text-sm text-red-600">{formErrors.title}</p>
+                   )}
+                 </div>
+               </div>
+
+               {/* Type */}
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">
+                   Type *
+                 </label>
+                 <Input
+                   value={formData.type}
+                   onChange={(e) => handleFormChange('type', e.target.value)}
+                   placeholder="e.g., Payment, Legal, Terms"
+                   className={formErrors.type ? 'border-red-500' : ''}
+                 />
+                 {formErrors.type && (
+                   <p className="text-sm text-red-600">{formErrors.type}</p>
+                 )}
+               </div>
+
+               {/* Content */}
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">
+                   Content *
+                 </label>
+                 <textarea
+                   value={formData.content}
+                   onChange={(e) => handleFormChange('content', e.target.value)}
+                   placeholder="Enter the detailed clause content..."
+                   rows={6}
+                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                     formErrors.content ? 'border-red-500' : 'border-gray-300'
+                   }`}
+                 />
+                 {formErrors.content && (
+                   <p className="text-sm text-red-600">{formErrors.content}</p>
+                 )}
+               </div>
+
+               {/* Active Status Toggle */}
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">
+                   Status
+                 </label>
+                 <div className="flex space-x-2">
+                   <button
+                     type="button"
+                     onClick={() => handleFormChange('is_active', true)}
+                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                       formData.is_active
+                         ? 'bg-blue-500 text-white shadow-md'
+                         : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                     }`}
+                   >
+                     Active
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => handleFormChange('is_active', false)}
+                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                       !formData.is_active
+                         ? 'bg-red-500 text-white shadow-md'
+                         : 'bg-red-100 text-red-600 hover:bg-red-200'
+                     }`}
+                   >
+                     Inactive
+                   </button>
+                 </div>
+               </div>
+             </div>
+
+             <DialogFooter>
+               <Button variant="secondary" onClick={handleCloseUpdateDialog}>
+                 Cancel
+               </Button>
+               <Button
+                 variant="primary"
+                 onClick={handleUpdateClause}
+                 disabled={isSubmitting}
+               >
+                 {isSubmitting ? (
+                   <>
+                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                     Updating...
+                   </>
+                 ) : (
+                   <>
+                     <Save className="h-4 w-4 mr-2" />
+                     Update Clause
+                   </>
+                 )}
+               </Button>
+             </DialogFooter>
+           </DialogContent>
+         </Dialog>
+
       </div>
-      </main>
     </div>
   );
 }

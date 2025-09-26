@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import Sidebar from '../../components/Sidebar';
-import { dashboardApi, DashboardData, Contract } from '../../services/api';
-import DashboardStats from './components/DashboardStats';
-import ContractTypeChart from './components/ContractTypeChart';
-import ProjectValueChart from './components/ProjectValueChart';
-import ContractsTable from './components/ContractsTable';
+import Sidebar from '../../../components/Sidebar';
+import { dashboardApi, DashboardData, Contract } from '../../../services/api';
+import DashboardStats from '../../dashboard/components/DashboardStats';
+import ContractTypeChart from '../../dashboard/components/ContractTypeChart';
+import ProjectValueChart from '../../dashboard/components/ProjectValueChart';
+import ContractsTable from '../../dashboard/components/ContractsTable';
 
 const DashboardPage = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
