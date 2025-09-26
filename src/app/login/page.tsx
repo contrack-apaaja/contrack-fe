@@ -5,6 +5,7 @@ import AuthCard from "../components/AuthCard";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import Link from "next/link";
+import api from '@/services/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,11 +18,21 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      // TODO: Integrate API endpoint
-      await new Promise((r) => setTimeout(r, 800));
-      console.log("login:", { email, password });
-      // Redirect example: router.push("/")
-    } catch (err) {
+      const response = await api.post('/auth/login', { email, password });
+
+      if (!response.status || response.status !== 200) {
+        throw new Error('Login failed');
+      }
+
+      const data = response.data as { token: string };
+      console.log('Login successful:', data);
+
+      // Save token to localStorage
+      localStorage.setItem('token', data.token);
+
+      // Redirect to dashboard after successful login
+      window.location.href = '/dashboard';
+    } catch (error) {
       setError("Login gagal. Coba lagi.");
     } finally {
       setLoading(false);
