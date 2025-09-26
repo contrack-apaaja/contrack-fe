@@ -328,4 +328,20 @@ export const contractsApi = {
   }
 };
 
+// AI Clause Analyze API
+export const aiApi = {
+  analyzeClauses: async (contractId: number, clauseTemplateIds: number[]) => {
+    try {
+      const response = await api.post('/ai/analyze', {
+        contract_id: contractId,
+        clause_template_ids: clauseTemplateIds
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error analyzing clauses:', error);
+      throw error;
+    }
+  }
+};
+
 export default api;

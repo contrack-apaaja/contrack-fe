@@ -4,8 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, FileText, Clipboard, LogOut, User } from "lucide-react"
-import { authUtils } from "@/services/api";
+import { LayoutDashboard, FileText, Clipboard, LogOut, User, Menu, X } from "lucide-react"
+import { authUtils } from "@/services/api"
+import { useSidebar } from "@/contexts/SidebarContext"
 
 
 const navigation = [
@@ -26,6 +27,7 @@ const useAuth = () => ({
 export function Sidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const { isCollapsed, toggleSidebar } = useSidebar()
 
   const handleLogout = async () => {
     await logout()
@@ -33,10 +35,10 @@ export function Sidebar() {
   }
 
   return (
-    <div className="fixed top-0 left-0 flex w-64 h-full flex-col bg-sidebar border-r border-sidebar-border">
-      <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
-        <h1 className="text-xl font-bold text-[#137fec]">contrack.</h1>
-      </div>
+    <div className="fixed top-0 left-0 flex w-64 h-full flex-col bg-sidebar border-r border-sidebar-border z-40">
+        <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
+          <h1 className="text-xl font-bold text-[#137fec]">contrack.</h1>
+        </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {

@@ -432,6 +432,29 @@ export default function ContractsPage() {
     window.open(previewUrl, '_blank');
   };
 
+  // Handle edit contract - redirects to edit page with pre-filled data
+  const handleEditContract = (contract: Contract) => {
+    // Store contract data in sessionStorage for the edit page to use
+    const contractData = {
+      id: contract.id,
+      project_name: contract.project_name,
+      package_name: contract.package_name || '',
+      external_reference: contract.external_reference || '',
+      contract_type: contract.contract_type,
+      signing_place: contract.signing_place || '',
+      signing_date: contract.signing_date ? contract.signing_date.split('T')[0] : '',
+      total_value: contract.total_value,
+      funding_source: contract.funding_source || '',
+      stakeholders: contract.stakeholders || [],
+      clauses: contract.clauses || []
+    };
+    
+    sessionStorage.setItem('editContractData', JSON.stringify(contractData));
+    
+    // Redirect to edit page
+    window.location.href = `/contracts/${contract.id}/edit`;
+  };
+
   // Format currency
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -1011,133 +1034,136 @@ export default function ContractsPage() {
           setIsDialogOpen(open);
           if (!open) setActiveTab('overview'); // Reset tab when closing
         }}>
-          <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+          <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col p-0">
             {selectedContract && (
               <>
           {/* Prominent Header */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-6 py-5 -mx-6 -mt-6 mb-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-6 py-4 mb-4 flex-shrink-0">
+            <div className="space-y-4">
+              <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            {selectedContract.project_name}
+                  {selectedContract.project_name}
                 </h2>
                 <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-            <span className="flex items-center">
-              <FileText className="h-4 w-4 mr-1" />
-              {selectedContract.contract_number}
-            </span>
-            <span className="flex items-center">
-              <Building className="h-4 w-4 mr-1" />
-              {selectedContract.contract_type}
-            </span>
-            <span className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              v{selectedContract.version_number}
-            </span>
+                  <span className="flex items-center">
+                    <FileText className="h-4 w-4 mr-1" />
+                    {selectedContract.contract_number}
+                  </span>
+                  <span className="flex items-center">
+                    <Building className="h-4 w-4 mr-1" />
+                    {selectedContract.contract_type}
+                  </span>
+                  <span className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    v{selectedContract.version_number}
+                  </span>
                 </div>
                 
                 {/* Key Metrics Cards */}
                 <div className="flex items-center space-x-6">
-            <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
-              <div className="flex items-center space-x-2">
-                <DollarSign className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="text-xs text-gray-500">Contract Value</p>
-                  <p className="font-semibold text-gray-900">{formatCurrency(selectedContract.total_value)}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
-              <div className="flex items-center space-x-2">
-                <span className={`h-3 w-3 rounded-full ${
-                  selectedContract.status === 'ACTIVE' ? 'bg-green-500' :
-                  selectedContract.status === 'DRAFT' ? 'bg-yellow-500' :
-                  selectedContract.status === 'TERMINATED' ? 'bg-red-500' :
-                  'bg-blue-500'
-                }`} />
-                <div>
-                  <p className="text-xs text-gray-500">Status</p>
-                  <p className="font-semibold text-gray-900">{selectedContract.status.replace(/_/g, ' ')}</p>
-                </div>
-              </div>
-            </div>
-
-            {(() => {
-              const metrics = calculateContractMetrics(selectedContract);
-              return (
-                <>
                   <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
-              <div className="flex items-center space-x-2">
-                <Shield className={`h-5 w-5 ${
-                  metrics.risk < 30 ? 'text-green-600' :
-                  metrics.risk < 60 ? 'text-yellow-600' :
-                  'text-red-600'
-                }`} />
-                <div>
-                  <p className="text-xs text-gray-500">Risk Level</p>
-                  <p className="font-semibold text-gray-900">{metrics.risk}%</p>
-                </div>
-              </div>
+                    <div className="flex items-center space-x-2">
+                      <DollarSign className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">Contract Value</p>
+                        <p className="font-semibold text-gray-900">{formatCurrency(selectedContract.total_value)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
+                    <div className="flex items-center space-x-2">
+                      <span className={`h-3 w-3 rounded-full ${
+                        selectedContract.status === 'ACTIVE' ? 'bg-green-500' :
+                        selectedContract.status === 'DRAFT' ? 'bg-yellow-500' :
+                        selectedContract.status === 'TERMINATED' ? 'bg-red-500' :
+                        'bg-blue-500'
+                      }`} />
+                      <div>
+                        <p className="text-xs text-gray-500">Status</p>
+                        <p className="font-semibold text-gray-900">{selectedContract.status.replace(/_/g, ' ')}</p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className={`h-5 w-5 ${
-                  metrics.compliance > 80 ? 'text-green-600' :
-                  metrics.compliance > 60 ? 'text-yellow-600' :
-                  'text-red-600'
-                }`} />
-                <div>
-                  <p className="text-xs text-gray-500">Compliance</p>
-                  <p className="font-semibold text-gray-900">{metrics.compliance}%</p>
-                </div>
-              </div>
-                  </div>
-                </>
-              );
-            })()}
+                  {(() => {
+                    const metrics = calculateContractMetrics(selectedContract);
+                    return (
+                      <>
+                        <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
+                          <div className="flex items-center space-x-2">
+                            <Shield className={`h-5 w-5 ${
+                              metrics.risk < 30 ? 'text-green-600' :
+                              metrics.risk < 60 ? 'text-yellow-600' :
+                              'text-red-600'
+                            }`} />
+                            <div>
+                              <p className="text-xs text-gray-500">Risk Level</p>
+                              <p className="font-semibold text-gray-900">{metrics.risk}%</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
+                          <div className="flex items-center space-x-2">
+                            <CheckCircle className={`h-5 w-5 ${
+                              metrics.compliance > 80 ? 'text-green-600' :
+                              metrics.compliance > 60 ? 'text-yellow-600' :
+                              'text-red-600'
+                            }`} />
+                            <div>
+                              <p className="text-xs text-gray-500">Compliance</p>
+                              <p className="font-semibold text-gray-900">{metrics.compliance}%</p>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               
-              {/* Action Buttons */}
-              <div className="flex items-center space-x-3">
-                <Button
-            variant="secondary"
-            onClick={() => handlePreview(selectedContract)}
-                >
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
-                </Button>
+              {/* Action Buttons - Now below the title and metrics */}
+              <div className="flex flex-col space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Button
+                    variant="secondary"
+                    onClick={() => handlePreview(selectedContract)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                  
+                  {/* Download only enabled for Active contracts */}
+                  <Button
+                    variant="secondary"
+                    disabled={selectedContract.status !== 'ACTIVE'}
+                    onClick={() => {
+                      // Handle download logic
+                      console.log('Download contract:', selectedContract.id);
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
                 
-                {/* Download only enabled for Active contracts */}
-                <Button
-            variant="secondary"
-            disabled={selectedContract.status !== 'ACTIVE'}
-            onClick={() => {
-              // Handle download logic
-              console.log('Download contract:', selectedContract.id);
-            }}
-                >
-            <Download className="h-4 w-4 mr-2" />
-            Download
-                </Button>
-                
-                {selectedContract.status === 'DRAFT' && (
-            <Button
-              variant="secondary"
-              onClick={() => handleUpdate(selectedContract)}
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-                )}
+                <div className="flex items-center">
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleEditContract(selectedContract)}
+                    className="w-full"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Contract
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="border-b border-gray-200 -mx-6 px-6 mb-6">
+          <div className="border-b border-gray-200 px-6 mb-4 flex-shrink-0">
             <nav className="flex space-x-8">
               {[
                 { id: 'overview', label: 'Overview', icon: Info },
@@ -1168,22 +1194,22 @@ export default function ContractsPage() {
             )}
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <div className="flex-1 overflow-y-auto px-6 pb-6" style={{ maxHeight: 'calc(95vh - 250px)' }}>
               {selectedContract && (
           <>
             {/* Overview Tab */}
             {activeTab === 'overview' && (
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {/* Progress Metrics */}
                 {(() => {
             const metrics = calculateContractMetrics(selectedContract);
             return (
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-6 flex items-center">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
                   <Activity className="h-5 w-5 mr-2 text-blue-600" />
                   Contract Metrics
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-gray-700">Timeline Progress</span>
@@ -1653,7 +1679,7 @@ export default function ContractsPage() {
             </div>
 
             {/* Dialog Footer */}
-            <div className="border-t border-gray-200 px-6 py-4 -mx-6 -mb-6 mt-6 bg-gray-50">
+            <div className="border-t border-gray-200 px-6 py-3 mt-4 bg-gray-50 flex-shrink-0">
               <div className="flex items-center justify-between">
           <div className="text-sm text-gray-500">
             {selectedContract && (
