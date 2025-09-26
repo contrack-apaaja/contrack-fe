@@ -80,7 +80,12 @@ export const clausesApi = {
   },
   
   createClause: async (data: Partial<ClauseTemplate>): Promise<{ data: ClauseTemplate }> => {
+    console.log('🚀 API: Creating clause with data:', data);
+    console.log('🚀 API: Data type:', typeof data);
+    console.log('🚀 API: Data keys:', Object.keys(data));
+    
     const response = await api.post('/api/clauses/', data);
+    console.log('🚀 API: Create response:', response);
     return response.data;
   },
   

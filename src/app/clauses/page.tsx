@@ -234,6 +234,8 @@ export default function ClausesPage() {
     }
     if (!formData.content.trim()) {
       errors.content = 'Content is required';
+    } else if (formData.content.trim().length < 10) {
+      errors.content = 'Content must be at least 10 characters long';
     }
     
     setFormErrors(errors);
@@ -246,8 +248,13 @@ export default function ClausesPage() {
     
     setIsSubmitting(true);
     try {
-      console.log('Submitting form data:', formData);
-      await clausesApi.createClause(formData);
+      console.log('🎯 Submitting form data:', formData);
+      console.log('🎯 Form data keys:', Object.keys(formData));
+      console.log('🎯 Form data values:', Object.values(formData));
+      
+      const response = await clausesApi.createClause(formData);
+      console.log('🎯 Create response:', response);
+      
       setIsCreateDialogOpen(false);
       setFormData({
         clause_code: '',
@@ -260,10 +267,35 @@ export default function ClausesPage() {
       // Refresh the clauses list
       fetchClauses();
     } catch (err: any) {
-      console.error('Error creating clause:', err);
-      console.error('Error response:', err.response?.data);
-      console.error('Error status:', err.response?.status);
-      setError(`Failed to create clause: ${err.response?.data?.message || err.message || 'Please try again.'}`);
+      console.error('❌ Error creating clause:', err);
+      console.error('❌ Error response:', err.response?.data);
+      console.error('❌ Error status:', err.response?.status);
+      console.error('❌ Error headers:', err.response?.headers);
+      
+      // Extract detailed validation errors
+      let errorMessage = 'Please try again.';
+      
+      if (err.response?.data?.error) {
+        // If there are specific field validation errors
+        const validationErrors = err.response.data.error;
+        console.log('🔍 Validation errors:', validationErrors);
+        
+        if (typeof validationErrors === 'object') {
+          const errorDetails = Object.entries(validationErrors)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join(', ');
+          errorMessage = `Validation failed: ${errorDetails}`;
+        } else {
+          errorMessage = `Validation failed: ${validationErrors}`;
+        }
+      } else {
+        errorMessage = err.response?.data?.message || 
+                      err.response?.data?.error || 
+                      err.message || 
+                      'Please try again.';
+      }
+      
+      setError(`Failed to create clause: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -785,18 +817,35 @@ export default function ClausesPage() {
                  )}
                </div>
 
-               {/* Active Status */}
-               <div className="flex items-center space-x-2">
-                 <input
-                   type="checkbox"
-                   id="is_active"
-                   checked={formData.is_active}
-                   onChange={(e) => handleFormChange('is_active', e.target.checked)}
-                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                 />
-                 <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                   Active
+               {/* Active Status Toggle */}
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">
+                   Status
                  </label>
+                 <div className="flex space-x-2">
+                   <button
+                     type="button"
+                     onClick={() => handleFormChange('is_active', true)}
+                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                       formData.is_active
+                         ? 'bg-blue-500 text-white shadow-md'
+                         : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                     }`}
+                   >
+                     Active
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => handleFormChange('is_active', false)}
+                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                       !formData.is_active
+                         ? 'bg-red-500 text-white shadow-md'
+                         : 'bg-red-100 text-red-600 hover:bg-red-200'
+                     }`}
+                   >
+                     Inactive
+                   </button>
+                 </div>
                </div>
              </div>
 
@@ -918,18 +967,35 @@ export default function ClausesPage() {
                  )}
                </div>
 
-               {/* Active Status */}
-               <div className="flex items-center space-x-2">
-                 <input
-                   type="checkbox"
-                   id="is_active_update"
-                   checked={formData.is_active}
-                   onChange={(e) => handleFormChange('is_active', e.target.checked)}
-                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                 />
-                 <label htmlFor="is_active_update" className="text-sm font-medium text-gray-700">
-                   Active
+               {/* Active Status Toggle */}
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">
+                   Status
                  </label>
+                 <div className="flex space-x-2">
+                   <button
+                     type="button"
+                     onClick={() => handleFormChange('is_active', true)}
+                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                       formData.is_active
+                         ? 'bg-blue-500 text-white shadow-md'
+                         : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                     }`}
+                   >
+                     Active
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => handleFormChange('is_active', false)}
+                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                       !formData.is_active
+                         ? 'bg-red-500 text-white shadow-md'
+                         : 'bg-red-100 text-red-600 hover:bg-red-200'
+                     }`}
+                   >
+                     Inactive
+                   </button>
+                 </div>
                </div>
              </div>
 
