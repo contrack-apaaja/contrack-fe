@@ -216,28 +216,33 @@ export const clausesApi = {
 
 // Contracts API
 export const contractsApi = {
-  getContracts: async (params?: {
-    q?: string;
-    status?: string;
-    contract_type?: string;
-    page?: number;
-    limit?: number;
-    sort_by?: string;
-    sort_dir?: 'asc' | 'desc';
-  }): Promise<{ data: ContractsResponse }> => {
-    const queryParams = new URLSearchParams();
-    if (params?.q) queryParams.append('q', params.q);
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.contract_type) queryParams.append('contract_type', params.contract_type);
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
-    if (params?.sort_dir) queryParams.append('sort_dir', params.sort_dir);
-
-    const url = `/api/contracts?${queryParams.toString()}`;
-    const response = await api.get(url);
-    console.log(response.data)
-    return response.data as { data: ContractsResponse };
+  getContracts: async (): Promise<{ data: ContractsResponse }> => {
+    const response = await api.get('/api/contracts/');
+    
+    // Handle different possible response structures
+    const responseData = response.data;
+    
+    if (responseData && typeof responseData === 'object' && 'data' in responseData) {
+      // If response has a nested data structure
+      return responseData as { data: ContractsResponse };
+    } else if (responseData && typeof responseData === 'object' && 'contracts' in responseData && Array.isArray((responseData as Record<string, unknown>).contracts)) {
+      // If response.data directly contains contracts
+      return { data: responseData as ContractsResponse };
+    } else if (Array.isArray(responseData)) {
+      // If response.data is directly an array of contracts
+      return { 
+        data: { 
+          contracts: responseData as Contract[], 
+          total: responseData.length,
+          page: 1,
+          limit: responseData.length,
+          pages: 1
+        } 
+      };
+    } else {
+      // Return empty contracts if unexpected structure
+      return { data: { contracts: [], total: 0, page: 1, limit: 10, pages: 0 } };
+    }
   },
 
   getContract: async (id: number): Promise<{ data: Contract }> => {
@@ -245,7 +250,7 @@ export const contractsApi = {
     return response.data as { data: Contract };
   },
 
-  createContract: async (data: Partial<ContractTemplate>): Promise<{ data: ContractTemplate }> => {
+  createContract: async (data: CreateContractRequest): Promise<{ data: ContractTemplate }> => {
     console.log('🚀 API: Creating contract with data:', data);
     const response = await api.post('/api/contracts/', data);
     return response.data as { data: ContractTemplate };
