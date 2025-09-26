@@ -72,11 +72,18 @@ const SelectTrigger = ({ children, className = "" }: SelectTriggerProps) => {
     };
   }, [isOpen, setIsOpen]);
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('🎯 SelectTrigger clicked, current isOpen:', isOpen);
+    setIsOpen(!isOpen);
+  };
+
   return (
     <button
       ref={triggerRef}
       type="button"
-      onClick={() => setIsOpen(!isOpen)}
+      onClick={handleClick}
       className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
@@ -91,7 +98,7 @@ const SelectContent = ({ children, className = "" }: SelectContentProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className={`absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md top-full left-0 right-0 mt-1 ${className}`}>
+    <div className={`absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white p-1 text-gray-900 shadow-lg top-full left-0 right-0 mt-1 ${className}`}>
       {children}
     </div>
   );
@@ -101,13 +108,18 @@ const SelectItem = ({ value, children, className = "" }: SelectItemProps) => {
   const { onValueChange, setIsOpen } = React.useContext(SelectContext);
 
   const handleClick = () => {
-    onValueChange?.(value);
-    setIsOpen(false);
+    console.log('🎯 SelectItem clicked:', value);
+    if (onValueChange) {
+      onValueChange(value);
+    }
+    if (setIsOpen) {
+      setIsOpen(false);
+    }
   };
 
   return (
     <div
-      className={`relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent hover:text-accent-foreground ${className}`}
+      className={`relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent hover:text-accent-foreground ${className}`}
       onClick={handleClick}
     >
       {children}

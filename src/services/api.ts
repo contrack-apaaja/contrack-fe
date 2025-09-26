@@ -10,8 +10,10 @@ const api = axios.create({
 // Types
 export interface ClauseTemplate {
   id: string;
+  clause_code?: string;
   title: string;
   type: string;
+  content?: string;
   is_active: boolean;
   updated_at: string;
   created_at: string;
@@ -78,7 +80,7 @@ export const clausesApi = {
   },
   
   createClause: async (data: Partial<ClauseTemplate>): Promise<{ data: ClauseTemplate }> => {
-    const response = await api.post('/api/clauses', data);
+    const response = await api.post('/api/clauses/', data);
     return response.data;
   },
   
