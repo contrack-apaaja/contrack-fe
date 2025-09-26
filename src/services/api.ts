@@ -87,6 +87,45 @@ export interface Contract {
   clauses?: ContractClause[];
 }
 
+export interface AIAnalysis {
+  id: number;
+  clause_id: number;
+  risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  risk_score: number;
+  analysis_summary: string;
+  identified_risks: string[];
+  recommendations: string[];
+  legal_implications: string;
+  compliance_notes: string;
+  confidence_score: number;
+  created_at: string;
+  updated_at: string;
+  clause?: {
+    id: number;
+    clause_code: string;
+    title: string;
+    content: string;
+    type: string;
+  };
+}
+
+export interface ContractAnalysis {
+  contract_id: number;
+  analysis_summary: string;
+  overall_risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  average_risk_score: number;
+  total_clauses_analyzed: number;
+  key_risks: string[];
+  strategic_recommendations: string[];
+  clause_analyses: Array<{
+    clause_id: number;
+    risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    risk_score: number;
+    summary: string;
+  }>;
+  created_at: string;
+}
+
 export interface CreateContractRequest {
   project_name: string;
   package_name?: string;
@@ -387,6 +426,79 @@ export const contractsApi = {
       limit: number;
       pages: number;
     } };
+  }
+};
+
+export const aiApi = {
+  analyzeClause: async (clauseId: number): Promise<{ status: string; message: string; data: AIAnalysis }> => {
+    const response = await api.post('/api/ai/analyze/', { clause_id: clauseId });
+    return response.data;
+  },
+
+  analyzeContract: async (contractId: number, clauseTemplateIds: number[]): Promise<{ status: string; message: string; data: ContractAnalysis }> => {
+    const response = await api.post('/api/ai/analyze-contract/', { 
+      contract_id: contractId, 
+      clause_template_ids: clauseTemplateIds 
+    });
+    return response.data;
+  },
+
+  getAnalysis: async (id: number): Promise<{ status: string; message: string; data: AIAnalysis }> => {
+    const response = await api.get(`/api/ai/analysis/${id}`);
+    return response.data;
+  },
+
+  getAnalysisByClause: async (clauseId: number): Promise<{ status: string; message: string; data: AIAnalysis }> => {
+    const response = await api.get(`/api/ai/analysis/clause/${clauseId}/`);
+    return response.data;
+  },
+
+  getAnalyses: async (params?: {
+    clause_id?: number;
+    risk_level?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    min_risk_score?: number;
+    max_risk_score?: number;
+    min_confidence?: number;
+    page?: number;
+    limit?: number;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+  }): Promise<{ status: string; message: string; data: {
+    analyses: AIAnalysis[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  } }> => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params || {}).forEach(([key, value]) => {
+      if (value !== undefined) {
+        queryParams.append(key, value.toString());
+      }
+    });
+
+    const response = await api.get(`/api/ai/analyses?${queryParams.toString()}`);
+    return response.data;
+  },
+
+  deleteAnalysis: async (id: number): Promise<{ status: string; message: string; data: null }> => {
+    const response = await api.delete(`/api/ai/analysis/${id}`);
+    return response.data;
+  },
+
+  getAnalysisStats: async (): Promise<{ status: string; message: string; data: {
+    total_analyses: number;
+    risk_distribution: {
+      LOW: number;
+      MEDIUM: number;
+      HIGH: number;
+      CRITICAL: number;
+    };
+    average_risk_score: number;
+    average_confidence: number;
+  } }> => {
+    const response = await api.get('/api/ai/stats');
+    return response.data;
   }
 };
 

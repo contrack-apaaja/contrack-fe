@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, FileText, Clipboard, LogOut, User } from "lucide-react"
+import { LayoutDashboard, FileText, Clipboard, LogOut, User, Scale } from "lucide-react"
 import { authUtils } from "@/services/api";
 
 
@@ -12,6 +12,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Contract", href: "/contracts", icon: FileText },
   { name: "Clause", href: "/clauses", icon: Clipboard },
+  { name: "Legal Review", href: "/legal/contracts", icon: Scale },
 ]
 
 const useAuth = () => ({
