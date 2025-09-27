@@ -127,70 +127,7 @@ export default function ContractsPage() {
 
         
         // If no contracts returned, use mock data for testing
-        if (response.data.contracts.length === 0) {
-          const mockContracts: Contract[] = [
-            {
-              id: 1,
-              base_id: 'mock-1',
-              version_number: 1,
-              project_name: 'Highway Construction Project',
-              package_name: 'Phase 1',
-              contract_number: 'CTR-2025-001',
-              external_reference: 'EXT-001',
-              contract_type: 'Construction',
-              signing_place: 'Manila',
-              signing_date: '2025-01-15',
-              total_value: 5000000,
-              funding_source: 'Government Budget',
-              status: 'ACTIVE',
-              created_by: 'john.doe@example.com',
-              created_at: '2025-01-01T00:00:00Z',
-              updated_at: '2025-01-15T00:00:00Z',
-              is_deleted: false
-            },
-            {
-              id: 2,
-              base_id: 'mock-2',
-              version_number: 1,
-              project_name: 'IT Support Services',
-              package_name: 'Annual Contract',
-              contract_number: 'CTR-2025-002',
-              external_reference: 'EXT-002',
-              contract_type: 'Service Agreement',
-              signing_place: 'Quezon City',
-              signing_date: '2025-02-01',
-              total_value: 1200000,
-              funding_source: 'Private Investment',
-              status: 'DRAFT',
-              created_by: 'jane.smith@example.com',
-              created_at: '2025-01-20T00:00:00Z',
-              updated_at: '2025-01-25T00:00:00Z',
-              is_deleted: false
-            },
-            {
-              id: 3,
-              base_id: 'mock-3',
-              version_number: 1,
-              project_name: 'Office Supplies Contract',
-              package_name: 'Q1 2025',
-              contract_number: 'CTR-2025-003',
-              external_reference: 'EXT-003',
-              contract_type: 'Supply Agreement',
-              signing_place: 'Makati',
-              signing_date: '2025-03-01',
-              total_value: 300000,
-              funding_source: 'Operational Budget',
-              status: 'PENDING_SIGNATURE',
-              created_by: 'mike.johnson@example.com',
-              created_at: '2025-02-15T00:00:00Z',
-              updated_at: '2025-02-20T00:00:00Z',
-              is_deleted: false
-            }
-          ];
-          setAllContracts(mockContracts);
-        } else {
-          setAllContracts(response.data.contracts);
-        }
+        setAllContracts(response.data.contracts);
       } catch (err) {
         setError("Failed to fetch contracts. Please try again.");
         console.error("Error fetching contracts:", err);

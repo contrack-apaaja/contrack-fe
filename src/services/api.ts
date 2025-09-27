@@ -1,14 +1,16 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/',
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
 });
 
 // Types
 export interface ClauseTemplate {
+  clause_template: any;
   id: string;
   clause_code?: string;
   title: string;
@@ -25,7 +27,7 @@ export interface ContractTemplate {
   external_reference: string;
   contract_type: string;
   signing_place: string;
-  signing_date: string;
+  signing_date?: string;
   total_value: number;
   funding_source: string;
   stakeholders: Stakeholder[];
@@ -178,22 +180,22 @@ export interface DashboardResponse {
   data: DashboardData;
 }
 
-// Contracts types
-export interface Contract {
+// Contracts types for dashboard
+export interface DashboardContract {
   id: number;
   project_name: string;
   contract_type: string;
   status: string;
   status_display: string;
   total_value: number;
-  signing_date: string;
+  signing_date?: string;
   created_at: string;
 }
 
-export interface ContractsResponse {
+export interface DashboardContractsResponse {
   status: string;
   message: string;
-  data: Contract[];
+  data: DashboardContract[];
 }
 
 // Contract Approval types
@@ -320,7 +322,7 @@ export const dashboardApi = {
     return response.data;
   },
 
-  getContracts: async (): Promise<ContractsResponse> => {
+  getContracts: async (): Promise<DashboardContractsResponse> => {
     const response = await api.get('/api/dashboard/contracts');
     return response.data;
   }
