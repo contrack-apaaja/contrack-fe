@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { contractsApi, Contract } from "@/services/api";
-import { Loader2, FileText, Calendar, DollarSign, MapPin, Building2, Users, Scale, ChevronLeft, ChevronRight, Download, Printer } from "lucide-react";
+import { Loader2, FileText, Calendar, Banknote, MapPin, Building2, Users, Scale, ChevronLeft, ChevronRight, Download, Printer } from "lucide-react";
 
 interface ContractPreview {
   id: number;
@@ -43,9 +43,9 @@ export default function ContractPreviewPage() {
   }, [contractId]);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'IDR',
     }).format(amount);
   };
 
@@ -823,7 +823,7 @@ export default function ContractPreviewPage() {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <DollarSign className="h-5 w-5 text-gray-500 mt-0.5" />
+                  <Banknote className="h-5 w-5 text-gray-500 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-gray-500">Total Value</p>
                     <p className="text-lg font-semibold text-green-600">{formatCurrency(contract.total_value)}</p>

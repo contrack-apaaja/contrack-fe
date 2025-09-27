@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { contractsApi, Contract } from '@/services/api';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Search,
   FileText,
-  DollarSign,
+  Banknote,
   AlertTriangle,
   Shield,
   Building,
@@ -28,7 +29,7 @@ interface ManagementContract extends Contract {
   key_risks: string[];
 }
 
-export default function ManagementContractsPage() {
+function ManagementContractsPageContent() {
   const router = useRouter();
   const [contracts, setContracts] = useState<ManagementContract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,9 +165,9 @@ export default function ManagementContractsPage() {
   );
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'IDR',
     }).format(amount);
   };
 
@@ -321,7 +322,7 @@ export default function ManagementContractsPage() {
                   <td className="px-6 py-4">
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <Banknote className="h-4 w-4 text-green-600" />
                         <span className="font-semibold text-green-600">
                           {formatCurrency(contract.total_value)}
                         </span>
@@ -403,5 +404,13 @@ export default function ManagementContractsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ManagementContractsPage() {
+  return (
+    <RoleGuard requiredPage="management" allowedRoles={['MANAGEMENT']}>
+      <ManagementContractsPageContent />
+    </RoleGuard>
   );
 }

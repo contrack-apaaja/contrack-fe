@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { contractsApi, Contract, aiApi, ContractAnalysis, ClauseAnalysis, AIRecommendationsResponse } from '@/services/api';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
@@ -13,7 +14,7 @@ import {
   Building,
   Loader2,
   Scale,
-  DollarSign,
+  Banknote,
   Clock,
   Bot,
   ArrowRight,
@@ -57,7 +58,7 @@ interface AIAnalysisState {
   timestamp: string;
 }
 
-export default function LegalContractDetailPage() {
+function LegalContractDetailPageContent() {
   const router = useRouter();
   const params = useParams();
   const contractId = parseInt(params.id as string);
@@ -240,7 +241,7 @@ export default function LegalContractDetailPage() {
         comments: 'Contract reviewed by legal team with AI analysis and approved for signature'
       });
       
-      alert(`Contract ${contract.contract_number} has been moved to signature queue!`);
+      alert(`Contract ${contract.contract_number} has been sent to management for approval!`);
       router.push('/legal/contracts');
     } catch (err) {
       console.error('Error moving contract to signature:', err);
@@ -249,9 +250,9 @@ export default function LegalContractDetailPage() {
   };
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'IDR',
     }).format(amount);
   };
 
@@ -444,15 +445,13 @@ export default function LegalContractDetailPage() {
               </Dialog>
             )}
             
-            {aiAnalysis?.contract_analysis && (
-              <Button
-                onClick={handleMoveToSignature}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <ArrowRight className="h-4 w-4 mr-2" />
-                Approve for Signature
-              </Button>
-            )}
+            <Button
+              onClick={handleMoveToSignature}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <ArrowRight className="h-4 w-4 mr-2" />
+              Send to Management
+            </Button>
           </div>
         </div>
 
@@ -469,7 +468,7 @@ export default function LegalContractDetailPage() {
             <div>
               <p className="text-sm text-gray-600">Total Value</p>
               <p className="font-semibold flex items-center">
-                <DollarSign className="h-4 w-4 mr-2" />
+                <Banknote className="h-4 w-4 mr-2" />
                 {formatCurrency(contract.total_value)}
               </p>
             </div>
@@ -741,5 +740,13 @@ export default function LegalContractDetailPage() {
         })}
       </div>
     </div>
+  );
+}
+
+export default function LegalContractDetailPage() {
+  return (
+    <RoleGuard requiredPage="legal" allowedRoles={['LEGAL']}>
+      <LegalContractDetailPageContent />
+    </RoleGuard>
   );
 }

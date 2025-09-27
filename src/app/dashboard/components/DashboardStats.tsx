@@ -28,6 +28,9 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ data }) => {
   ];
 
   const getStatusCount = (status: string) => {
+    if (!data.status_counts || !Array.isArray(data.status_counts)) {
+      return 0;
+    }
     return data.status_counts.find(item => item.status === status)?.count || 0;
   };
 

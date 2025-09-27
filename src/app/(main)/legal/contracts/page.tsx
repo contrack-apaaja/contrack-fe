@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { contractsApi, Contract, aiApi, ContractAnalysis } from '@/services/api';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +14,7 @@ import {
   Building,
   Loader2,
   Scale,
-  DollarSign,
+  Banknote,
   Clock,
   Eye,
   Bot,
@@ -36,7 +37,7 @@ interface AIAnalysisState {
   };
 }
 
-export default function LegalContractsPage() {
+function LegalContractsPageContent() {
   const router = useRouter();
   const [contracts, setContracts] = useState<LegalContract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,9 +147,9 @@ export default function LegalContractsPage() {
   );
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'IDR',
     }).format(amount);
   };
 
@@ -320,7 +321,7 @@ export default function LegalContractsPage() {
                     <td className="px-6 py-4">
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2">
-                          <DollarSign className="h-4 w-4 text-green-600" />
+                          <Banknote className="h-4 w-4 text-green-600" />
                           <span className="font-semibold text-green-600">
                             {formatCurrency(contract.total_value)}
                           </span>
@@ -422,5 +423,13 @@ export default function LegalContractsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LegalContractsPage() {
+  return (
+    <RoleGuard requiredPage="legal" allowedRoles={['LEGAL']}>
+      <LegalContractsPageContent />
+    </RoleGuard>
   );
 }

@@ -28,8 +28,11 @@ interface ProjectValueChartProps {
 }
 
 const ProjectValueChart: React.FC<ProjectValueChartProps> = ({ data }) => {
+  // Handle empty or null data
+  const safeData = data || [];
+  
   // Sort by value and take top 5
-  const sortedData = [...data]
+  const sortedData = [...safeData]
     .sort((a, b) => b.total_value - a.total_value)
     .slice(0, 5);
 
@@ -141,7 +144,18 @@ const ProjectValueChart: React.FC<ProjectValueChartProps> = ({ data }) => {
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h3 className="text-lg font-semibold text-gray-800 mb-4">Top 5 Project Value Distribution</h3>
       <div className="h-80">
-        <Bar data={chartData} options={options} />
+        {sortedData.length > 0 ? (
+          <Bar data={chartData} options={options} />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-gray-500">
+              <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <p className="text-sm">No project data available</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

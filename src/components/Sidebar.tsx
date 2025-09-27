@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button"
 import { LayoutDashboard, FileText, Clipboard, LogOut, User, Menu, X, CheckCircle, Scale } from "lucide-react"
 import { authUtils } from "@/services/api"
 import { useSidebar } from "@/contexts/SidebarContext"
-
+import { canAccessPage } from "@/utils/auth"
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Contract", href: "/contracts", icon: FileText },
-  { name: "Clause", href: "/clauses", icon: Clipboard },
-  { name: "Legal Review", href: "/legal/contracts", icon: Scale },
-  { name: "Management", href: "/management/contracts", icon: CheckCircle },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, page: "dashboard" as const },
+  { name: "Contract", href: "/contracts", icon: FileText, page: "contracts" as const },
+  { name: "Clause", href: "/clauses", icon: Clipboard, page: "clauses" as const },
+  { name: "Legal Review", href: "/legal/contracts", icon: Scale, page: "legal" as const },
+  { name: "Management", href: "/management/contracts", icon: CheckCircle, page: "management" as const },
 ]
 
 const useAuth = () => {
@@ -55,6 +55,10 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
           const isActive = pathname === item.href
+          const hasAccess = canAccessPage(item.page)
+
+          // Don't render navigation items the user doesn't have access to
+          if (!hasAccess) return null
 
           return (
             <Link

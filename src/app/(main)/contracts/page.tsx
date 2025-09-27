@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, Save, Edit, Eye, FileText, TrendingUp, Filter, X, Download, Calendar, DollarSign, Users, FileCheck, AlertTriangle, Shield, Clock, Building, MapPin, User, CheckCircle, Activity, History, Upload } from "lucide-react";
+import { Plus, Loader2, LogOut, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Info, Save, Edit, Eye, FileText, TrendingUp, Filter, X, Download, Calendar, Banknote, Users, FileCheck, AlertTriangle, Shield, Clock, Building, MapPin, User, CheckCircle, Activity, History, Upload } from "lucide-react";
 import { Button } from "@/app/components/Button";
 import { Input } from "@/components/ui/input";
 import { UltraSimpleSelect } from "@/app/components/ui/ultra-simple-select";
@@ -495,9 +495,9 @@ export default function ContractsPage() {
 
   // Format currency
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'IDR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -1108,7 +1108,7 @@ export default function ContractsPage() {
                 <div className="flex items-center space-x-6">
                   <div className="bg-white rounded-lg px-4 py-3 shadow-sm border">
                     <div className="flex items-center space-x-2">
-                      <DollarSign className="h-5 w-5 text-green-600" />
+                      <Banknote className="h-5 w-5 text-green-600" />
                       <div>
                         <p className="text-xs text-gray-500">Contract Value</p>
                         <p className="font-semibold text-gray-900">{formatCurrency(selectedContract.total_value)}</p>
@@ -1355,12 +1355,12 @@ export default function ContractsPage() {
             {/* Financial Information */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h4 className="text-lg font-semibold mb-6 flex items-center">
-                <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                <Banknote className="h-5 w-5 mr-2 text-green-600" />
                 Financial Information
               </h4>
               <div className="space-y-6">
                 <div className="flex items-start space-x-3">
-                  <DollarSign className="h-4 w-4 mt-1 text-gray-400" />
+                  <Banknote className="h-4 w-4 mt-1 text-gray-400" />
                   <div className="flex-1">
               <label className="text-sm font-medium text-gray-500">Total Value</label>
               <p className="text-lg font-bold text-green-600 mt-1">{formatCurrency(selectedContract.total_value)}</p>
